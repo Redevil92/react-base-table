@@ -1,5 +1,5 @@
 # react-base-table
 
-BaseTable is an high customiyable react table component.
+BaseTable is an high customizable react table component.
 
 Documentation coming soon.
