@@ -1,4 +1,4 @@
-﻿import Icon from '@mdi/react';
+﻿import Icon from "@mdi/react";
 
 interface BaseButtonInterface {
   text?: string;
@@ -25,21 +25,27 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
 
   const button = (
     <button
-      className={`btn ${props.className ?? ''} ${props.ghost ? ' btn-ghost' : ''} btn-${
-        props.small ? 'xs' : 'sm'
+      className={`btn ${props.className ?? ""} ${props.ghost ? " btn-ghost" : ""} btn-${
+        props.small ? "xs" : "sm"
       } content-center`}
       onClick={() => props.onClick()}
       disabled={props.disabled === true}
     >
       {props.icon && (
         <Icon
-          path={props.icon ?? ''}
-          color={props.disabled ? props.iconColorDisabled ?? 'lightgrey' : props.iconColor}
+          path={props.icon ?? ""}
+          color={
+            props.disabled
+              ? (props.iconColorDisabled ?? "lightgrey")
+              : props.iconColor
+          }
           size={iconSize()}
         />
       )}
 
-      {props.text && <div className={`text-${props.small ? 'xs' : 'sm'}`}>{props.text}</div>}
+      {props.text && (
+        <div className={`text-${props.small ? "xs" : "sm"}`}>{props.text}</div>
+      )}
     </button>
   );
 
@@ -48,7 +54,7 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
       {props.tooltip ? (
         <div
           className={`tooltip ${
-            props.tooltipRight ? 'tooltip-right' : 'tooltip-top'
+            props.tooltipRight ? "tooltip-right" : "tooltip-top"
           } tooltip-top before:whitespace-pre-wrap text-left`}
           data-tip={`${props.tooltip}`}
         >

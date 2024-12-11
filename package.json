@@ -3,10 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.es.js",
+  "module": "dist/index.es.js",
   "files": [
-    "src/**/*"
+    "/dist"
   ],
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs.js",
+      "import": "./dist/index.es.js"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
