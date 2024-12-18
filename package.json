@@ -3,20 +3,24 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "types": "dist/types/index.d.ts",
   "main": "dist/index.es.js",
   "module": "dist/index.es.js",
   "files": [
-    "/dist"
+    "dist",
+    "typings"
   ],
   "exports": {
     ".": {
       "require": "./dist/index.cjs.js",
-      "import": "./dist/index.es.js"
+      "import": "./dist/index.es.js",
+      "types": "./dist/types/index.d.ts"
     }
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.app.json && vite build",
+    "build2": "vite build && tsc -p tsconfig.app.json",
     "lint": "eslint .",
     "preview": "vite preview"
   },
