@@ -64,13 +64,13 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     }
 
     const header = props.headers.find(
-      (header) => header.id === props.currentSortId,
+      (header) => header.id === props.currentSortId
     );
 
     // sort
     if (header?.customSort) {
       items.sort((a: TableItem, b: TableItem) =>
-        header.customSort!(a, b, ascendingOrder),
+        header.customSort!(a, b, ascendingOrder)
       );
     } else {
       const sortingFunction = ascendingOrder
@@ -79,7 +79,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
       items.sort((a: TableItem, b: TableItem) => {
         return sortingFunction(
           b[props.currentSortId!],
-          a[props.currentSortId!],
+          a[props.currentSortId!]
         );
       });
     }
@@ -128,7 +128,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
   const getFilterItemsForHeader = (headerId: string) => {
     let items = filteredItems.map((item) => item[headerId]);
     const currentFilter = activeFilters.find(
-      (filter) => filter.headerId === headerId,
+      (filter) => filter.headerId === headerId
     );
 
     if (currentFilter) {
@@ -162,7 +162,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
 
   const getRowStyle = (row: TableItem) => {
     const style = props.highlightCondition?.find(
-      (condition) => row[condition.propertyId] === condition.value,
+      (condition) => row[condition.propertyId] === condition.value
     );
 
     if (!style) {
@@ -196,6 +196,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
           scrollbarWidth: "thin",
         }}
       >
+        <div className="test">MY TEST</div>
         <table
           style={{ width: "100%", position: "unset" }}
           className={`table table-xs table-pin-rows ${
@@ -265,7 +266,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
                           items={getFilterItemsForHeader(header.id)}
                           itemsToHide={
                             activeFilters.find(
-                              (filter) => filter.headerId === header.id,
+                              (filter) => filter.headerId === header.id
                             )?.itemsToHide ?? []
                           }
                           onShowOrHide={(show: boolean) =>

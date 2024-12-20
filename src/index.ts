@@ -1,7 +1,9 @@
-import "./index.css";
+import "./output.css";
 
 // export { default as BaseTable } from "./components/BaseTable/BaseTable";
 
-export { default as BaseButton } from "./components/BaseButton";
+// export { default as BaseButton } from "./components/BaseButton";
 
-export const TEST = "Hello";
+export { default as BaseTable } from "./components/BaseTable/BaseTable";
+
+// export const TEST = "Hello";
