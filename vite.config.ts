@@ -4,6 +4,11 @@ import { peerDependencies } from "./package.json";
 
 // https://vite.dev/config/
 export default defineConfig({
+  css: {
+    preprocessorOptions: {
+      css: {},
+    },
+  },
   build: {
     outDir: "dist", // Output folder for compiled code
     lib: {

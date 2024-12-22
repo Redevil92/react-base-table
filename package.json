@@ -1,21 +1,26 @@
 {
   "name": "@redevilkz/react-base-table",
-  "private": true,
   "version": "0.0.0",
+  "license": "MIT",
   "type": "module",
   "types": "dist/types/index.d.ts",
   "main": "dist/index.es.js",
+  "style": "dist/style.css",
   "module": "dist/index.es.js",
   "files": [
     "dist",
     "typings"
+  ],
+  "sideEffects": [
+    "**/*.css"
   ],
   "exports": {
     ".": {
       "require": "./dist/index.cjs.js",
       "import": "./dist/index.es.js",
       "types": "./dist/types/index.d.ts"
-    }
+    },
+    "./style.css": "./dist/style.css"
   },
   "scripts": {
     "dev": "vite",
