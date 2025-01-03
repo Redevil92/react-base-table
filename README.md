@@ -1,100 +1,151 @@
 # @redevilkz/react-base-table
 
-`@redevilkz/react-base-table` is a React plugin for rendering customizable and interactive table components. It provides a straightforward way to display tabular data with support for features like custom headers, rendering, sorting, and filtering.
-
----
+A simple and customizable React table component with support for sorting, filtering, and custom rendering.
 
 ## Installation
 
-Install the package using npm or yarn:
+Install the package via npm or yarn:
 
 ```bash
 npm install @redevilkz/react-base-table
-# or
+```
+
+or
+
+```bash
 yarn add @redevilkz/react-base-table
 ```
 
----
-
 ## Usage
 
-To use the table component in your project, import both the `BaseTable` component and the accompanying CSS styles:
+To use the table component, you need to import both the `BaseTable` component and its CSS file:
 
-```tsx
+```javascript
 import { BaseTable } from "@redevilkz/react-base-table";
 import "@redevilkz/react-base-table/style.css";
 ```
 
-### Example
+### Basic Example
 
-Here is a simple example of how to use the `BaseTable` component:
+Here's how to render a simple table:
 
-```tsx
+```javascript
 const headers = [
   { id: "name", text: "Name", type: "string", sortable: true },
   { id: "age", text: "Age", type: "number", sortable: true },
-  { id: "city", text: "City", type: "string" },
 ];
 
 const items = [
-  { name: "Alice", age: "25", city: "New York" },
-  { name: "Bob", age: "30", city: "San Francisco" },
-  { name: "Charlie", age: "35", city: "Chicago" },
+  { name: "John Doe", age: "30" },
+  { name: "Jane Smith", age: "25" },
 ];
 
 <BaseTable headers={headers} items={items}></BaseTable>;
 ```
 
----
+## Props
 
-## Interfaces
+The `BaseTable` component accepts the following props:
+
+### `BaseTableProps`
+
+| Prop                 | Type                                                             | Default | Description                                          |
+| -------------------- | ---------------------------------------------------------------- | ------- | ---------------------------------------------------- |
+| `height`             | `string`                                                         | `auto`  | Sets the height of the table.                        |
+| `headers`            | `BaseTableHeader[]`                                              | -       | Defines the headers of the table.                    |
+| `items`              | `TableItem[]`                                                    | -       | Defines the data items to display in the table.      |
+| `marginTop`          | `string`                                                         | `0`     | Sets the top margin for the table.                   |
+| `noBorder`           | `boolean`                                                        | `false` | Removes the border around the table if `true`.       |
+| `pinColumns`         | `boolean`                                                        | `false` | Pins the columns for horizontal scrolling if `true`. |
+| `alignCenterInLine`  | `boolean`                                                        | `false` | Aligns content centrally within rows if `true`.      |
+| `currentSortId`      | `string`                                                         | -       | Sets the ID of the column currently being sorted.    |
+| `highlightCondition` | `{ propertyId: string, value: unknown, style: CSSProperties }[]` | -       | Defines conditions for highlighting rows.            |
+| `onResetSort`        | `() => void`                                                     | -       | Callback triggered to reset sorting.                 |
+| `onRowDoubleClick`   | `(item: TableItem) => void`                                      | -       | Callback triggered when a row is double-clicked.     |
+| `onSortByColumn`     | `(columnId: string) => void`                                     | -       | Callback triggered when sorting by a column.         |
+
+## Header Definition
 
 ### `BaseTableHeader`
 
-The `headers` array passed to the `BaseTable` component must conform to the following interface:
+| Property       | Type                                                              | Description                                     |
+| -------------- | ----------------------------------------------------------------- | ----------------------------------------------- | --------- | ------------------------------- |
+| `id`           | `string`                                                          | Unique identifier for the column.               |
+| `text`         | `string`                                                          | The display text for the column header.         |
+| `type`         | `'string'                                                         | 'list'                                          | 'number'` | The type of data in the column. |
+| `customHeader` | `(header: BaseTableHeader) => ReactNode`                          | Custom rendering function for the header.       |
+| `customRender` | `(item: TableItem, header: BaseTableHeader) => ReactNode`         | Custom rendering function for the cell content. |
+| `sortable`     | `boolean`                                                         | Enables sorting for the column if `true`.       |
+| `customSort`   | `(a: TableItem, b: TableItem, ascendingOrder: boolean) => number` | Custom sorting function for the column.         |
+| `hasFilter`    | `boolean`                                                         | Enables filtering for the column if `true`.     |
 
-```typescript
-export default interface BaseTableHeader {
-  id: string; // Unique identifier for the header
-  text: string; // Text to display in the header
-  type?: "string" | "list" | "number"; // Data type of the column
-  customHeader?: (header: BaseTableHeader) => ReactNode; // Custom rendering for the header
-  customRender?: (item: TableItem, header: BaseTableHeader) => ReactNode; // Custom rendering for cell content
-
-  sortable?: boolean; // Whether the column is sortable
-  customSort?: (a: TableItem, b: TableItem, ascendingOrder: boolean) => number; // Custom sort logic
-  hasFilter?: boolean; // Whether the column has a filter
-}
-```
+## Data Items
 
 ### `TableItem`
 
-The `items` array passed to the `BaseTable` component must conform to the following interface:
+A `TableItem` is an object where each key corresponds to a column ID defined in the `headers`.
 
-```typescript
-export default interface TableItem {
-  [key: string]: string; // Key-value pairs for the row data
-}
+Example:
+
+```javascript
+const item = {
+  name: "John Doe",
+  age: "30",
+};
 ```
 
----
+## Advanced Usage
 
-## Features
+### Highlighting Rows
 
-- **Custom Headers**: Use `customHeader` to define custom header rendering.
-- **Custom Cell Rendering**: Use `customRender` for advanced cell content.
-- **Sorting**: Built-in sorting with support for custom sorting logic.
-- **Filtering**: Optional column filtering.
-- **Type Support**: Specify column types (`string`, `list`, `number`) for tailored functionality.
+You can highlight rows based on specific conditions using the `highlightCondition` prop:
 
----
+```javascript
+const highlightCondition = [
+  {
+    propertyId: "age",
+    value: "30",
+    style: { backgroundColor: "yellow" },
+  },
+];
 
-## Contributing
+<BaseTable
+  headers={headers}
+  items={items}
+  highlightCondition={highlightCondition}
+></BaseTable>;
+```
 
-Contributions are welcome! Feel free to submit issues or pull requests on the [GitHub repository](https://github.com/redevilkz/react-base-table).
+### Custom Rendering
 
----
+You can use the `customRender` function in `BaseTableHeader` to customize how a cell is displayed:
+
+```javascript
+const headers = [
+  {
+    id: "name",
+    text: "Name",
+    customRender: (item) => <strong>{item.name}</strong>,
+  },
+];
+```
+
+### Sorting Callback
+
+Handle sorting logic with the `onSortByColumn` callback:
+
+```javascript
+const handleSort = (columnId) => {
+  console.log(`Sorting by column: ${columnId}`);
+};
+
+<BaseTable
+  headers={headers}
+  items={items}
+  onSortByColumn={handleSort}
+></BaseTable>;
+```
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+MIT
