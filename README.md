@@ -69,10 +69,10 @@ The `BaseTable` component accepts the following props:
 ### `BaseTableHeader`
 
 | Property       | Type                                                              | Description                                     |
-| -------------- | ----------------------------------------------------------------- | ----------------------------------------------- | --------- | ------------------------------- |
+| -------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
 | `id`           | `string`                                                          | Unique identifier for the column.               |
 | `text`         | `string`                                                          | The display text for the column header.         |
-| `type`         | `'string'                                                         | 'list'                                          | 'number'` | The type of data in the column. |
+| `type`         | `'string', 'list', 'number'`                                      | The type of data in the column.                 |
 | `customHeader` | `(header: BaseTableHeader) => ReactNode`                          | Custom rendering function for the header.       |
 | `customRender` | `(item: TableItem, header: BaseTableHeader) => ReactNode`         | Custom rendering function for the cell content. |
 | `sortable`     | `boolean`                                                         | Enables sorting for the column if `true`.       |
