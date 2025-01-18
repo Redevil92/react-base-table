@@ -2,10 +2,10 @@
 import { mdiFilter } from "@mdi/js";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ActiveTableFilter } from "./BaseTable";
 import useClickOutside from "../../hooks/useClickOutside";
 import { FilterTypes } from "../../enum/FilterTypes";
 import BaseButton from "../BaseButton";
+import ActiveTableFilter from "./models/ActiveTableFilter";
 
 interface TableFilterProps {
   show: boolean;
@@ -59,7 +59,7 @@ function TableFilter(props: Readonly<TableFilterProps>) {
       item
         ?.toString()
         .toLocaleLowerCase()
-        .includes(searchValue?.toString().toLocaleLowerCase()),
+        .includes(searchValue?.toString().toLocaleLowerCase())
     );
   };
 
@@ -93,10 +93,10 @@ function TableFilter(props: Readonly<TableFilterProps>) {
     const shownFilters = getFilteredItems();
 
     const checkedShowFilter = shownFilters.filter(
-      (item) => !filteredOutItems.includes(item),
+      (item) => !filteredOutItems.includes(item)
     );
     const itemsToHide = props.items.filter(
-      (item) => !checkedShowFilter.includes(item),
+      (item) => !checkedShowFilter.includes(item)
     );
 
     props.onSetFilter(props.headerId, itemsToHide);

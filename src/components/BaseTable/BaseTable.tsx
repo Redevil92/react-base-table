@@ -1,6 +1,7 @@
 ﻿import { CSSProperties, useMemo, useState } from "react";
 import BaseTableHeader from "./models/BaseTableHeaders";
 import TableItem from "./models/TableItem";
+import ActiveTableFilter from "./models/ActiveTableFilter"
 import TableFilter from "./TableFilter";
 
 import {
@@ -14,7 +15,7 @@ import { alphabeticalSort, alphabeticalSortInverse } from "../../utils/sorting";
 import BaseButton from "../BaseButton";
 import { FilterTypes } from "../../enum/FilterTypes";
 
-interface BaseTableProps {
+export interface BaseTableProps {
   height?: string;
   headers: BaseTableHeader[];
   items: TableItem[];
@@ -28,19 +29,18 @@ interface BaseTableProps {
     value: unknown;
     style: CSSProperties;
   }[];
+  activeFilters?: ActiveTableFilter[];
   onResetSort?: () => void;
   onRowDoubleClick?: (item: TableItem) => void;
   onSortByColumn?: (columnId: string) => void;
 }
 
-export interface ActiveTableFilter {
-  headerId: string;
-  itemsToHide: string[];
-}
 
 export default function BaseTable(props: Readonly<BaseTableProps>) {
   const [filterToShow, setFilterToShow] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveTableFilter[]>([]);
+  const [activeFilters, setActiveFilters] = useState<ActiveTableFilter[]>(
+    props.activeFilters ?? []
+  );
 
   const [ascendingOrder, setAscendingOrder] = useState(true);
 
@@ -177,7 +177,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
       {activeFilters.length > 0 && (
         <BaseButton
           onClick={clearActiveFilters}
-          className="mb-1 h-5 min-h-5"
+          className="mb-1 h-5 min-h-5 w-36"
           small
           text="Clear all filters"
           iconSize={0.6}
@@ -196,7 +196,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
           scrollbarWidth: "thin",
         }}
       >
-        <div className="test">MY TEST</div>
+      
         <table
           style={{ width: "100%", position: "unset" }}
           className={`table table-xs table-pin-rows ${
