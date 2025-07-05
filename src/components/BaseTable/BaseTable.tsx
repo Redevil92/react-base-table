@@ -1,7 +1,7 @@
 ﻿import { CSSProperties, useMemo, useState } from "react";
 import BaseTableHeader from "./models/BaseTableHeaders";
 import TableItem from "./models/TableItem";
-import ActiveTableFilter from "./models/ActiveTableFilter"
+import ActiveTableFilter from "./models/ActiveTableFilter";
 import TableFilter from "./TableFilter";
 
 import {
@@ -34,7 +34,6 @@ export interface BaseTableProps {
   onRowDoubleClick?: (item: TableItem) => void;
   onSortByColumn?: (columnId: string) => void;
 }
-
 
 export default function BaseTable(props: Readonly<BaseTableProps>) {
   const [filterToShow, setFilterToShow] = useState("");
@@ -175,14 +174,16 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
   return (
     <>
       {activeFilters.length > 0 && (
-        <BaseButton
-          onClick={clearActiveFilters}
-          className="mb-1 h-5 min-h-5 w-36"
-          small
-          text="Clear all filters"
-          iconSize={0.6}
-          icon={mdiFilterOff}
-        />
+        <div style={{ width: "100%", display: "flex" }}>
+          <BaseButton
+            onClick={clearActiveFilters}
+            className="mb-1 h-5 min-h-5 w-36 flex"
+            small
+            text="Clear all filters"
+            iconSize={0.6}
+            icon={mdiFilterOff}
+          />
+        </div>
       )}
 
       <div
@@ -196,7 +197,6 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
           scrollbarWidth: "thin",
         }}
       >
-      
         <table
           style={{ width: "100%", position: "unset" }}
           className={`table table-xs table-pin-rows ${
