@@ -130,4 +130,43 @@ describe("BaseTable Component", () => {
     expect(screen.getByTestId("custom-header")).toBeInTheDocument();
     expect(screen.getAllByTestId("custom-cell").length).toBe(items.length);
   });
+
+  test("renders empty state when items is empty", () => {
+    render(<BaseTable headers={headers} items={[]} />);
+    // You may want to check for a specific empty state message or just that no rows are rendered
+    const rows = screen.queryAllByRole("row");
+    // 1 row for headers, 0 for data
+    expect(rows.length).toBe(1);
+  });
+
+  test("renders pin columns class when pinColumns is true", () => {
+    render(<BaseTable headers={headers} items={items} pinColumns={true} />);
+    const table = screen.getByRole("table");
+    expect(table.className).toMatch(/table-pin-cols/);
+  });
+
+  test("renders with custom height and marginTop", () => {
+    render(
+      <BaseTable
+        headers={headers}
+        items={items}
+        height="300px"
+        marginTop="2rem"
+      />
+    );
+    const container = screen.getByRole("table").parentElement;
+    expect(container).toHaveStyle({ height: "300px" });
+  });
+
+  test("does not render Clear All Filters button when no filters are active", () => {
+    render(<BaseTable headers={headers} items={items} />);
+    expect(screen.queryByText("Clear all filters")).not.toBeInTheDocument();
+  });
+
+  test("renders correct number of rows", () => {
+    render(<BaseTable headers={headers} items={items} />);
+    // 1 header row + 3 data rows
+    const rows = screen.getAllByRole("row");
+    expect(rows.length).toBe(1 + items.length);
+  });
 });
