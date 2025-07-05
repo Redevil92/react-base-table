@@ -138,14 +138,14 @@ function TableFilter(props: Readonly<TableFilterProps>) {
             <button
               onClick={selectAllItemHandler}
               onFocus={() => {}}
-              className="mr-4 cursor-pointer hover:!border-none !border-none focus:!outline-none bg-transparent "
+              className="mr-4 cursor-pointer hover:!border-none !border-none focus:!outline-none bg-transparent btn-sm"
             >
               Select All
             </button>
             <button
               onClick={clearAllItemHandler}
               onFocus={() => {}}
-              className="cursor-pointer  hover:!border-none !border-none focus:!outline-none bg-transparent"
+              className="cursor-pointer hover:!border-none !border-none focus:!outline-none bg-transparent btn-sm"
             >
               Clear
             </button>
