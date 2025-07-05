@@ -2,6 +2,38 @@
 
 A simple and customizable React table component with support for sorting, filtering, and custom rendering.
 
+## How to test the package in dev
+
+Yalc emulates npm publish. I prefer it to npm link because it causes less issues.
+
+```bash
+npm i yalc -g
+```
+
+In your package:
+
+```bash
+yalc publish
+```
+
+In your main project:
+
+```bash
+yalc add @redevilkz/react-base-table
+```
+
+In your package, after a rebuild:
+
+```bash
+yalc push
+```
+
+When you change something in your library
+
+```bash
+npm run build && yalc push
+```
+
 ## Installation
 
 Install the package via npm or yarn:

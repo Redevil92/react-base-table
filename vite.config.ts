@@ -13,12 +13,12 @@ export default defineConfig({
     outDir: "dist", // Output folder for compiled code
     lib: {
       entry: "./src/index.ts",
-      name: "vite-react-ts-button",
+      name: "ReactBaseTable",
       fileName: (format) => `index.${format}.js`,
       formats: ["cjs", "es"],
     },
     rollupOptions: {
-      external: [...Object.keys(peerDependencies)],
+      external: ["react", "react-dom", ...Object.keys(peerDependencies)],
     },
     sourcemap: true,
     emptyOutDir: true,
