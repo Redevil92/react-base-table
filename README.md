@@ -31,7 +31,7 @@ yalc push
 When you change something in your library
 
 ```bash
-npm run build && yalc push
+npm run buildForNPM && yalc push
 ```
 
 ## Installation
