@@ -160,7 +160,7 @@ In your package:
 yalc publish
 ```
 
-In your main project:
+In the project that wants to consume the package:
 
 ```bash
 yalc add @redevilkz/react-base-table
@@ -175,7 +175,7 @@ yalc push
 When you change something in your library
 
 ```bash
-npm run buildForNPM && yalc push
+npm run buildForNPM && yalc push --sig
 ```
 
 ## License
