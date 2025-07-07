@@ -1,4 +1,4 @@
-import "./output.css";
+import "../output.css";
 
 // export { default as BaseTable } from "./components/BaseTable/BaseTable";
 

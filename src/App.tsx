@@ -1,5 +1,5 @@
 import "./App.css";
-import "./output.css";
+
 import BaseTableHeader from "./components/BaseTable/models/BaseTableHeaders";
 import BaseTable from "./components/BaseTable/BaseTable";
 import TableItem from "./components/BaseTable/models/TableItem";

@@ -186,6 +186,12 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
         </div>
       )}
 
+      <div>
+        <button className={`btn btn-xs btn-accent btn-soft`}>Small</button>
+        <button className="btn btn-sm btn-accent btn-soft">Small</button>
+        <button className="btn  btn-accent btn-soft">Small</button>
+      </div>
+
       <div
         className="overflow-x-auto"
         style={{
@@ -201,10 +207,10 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
           style={{ width: "100%", position: "unset" }}
           className={`table table-xs table-pin-rows ${
             props.pinColumns ? "table-pin-cols" : ""
-          }  border !border-gray-300`}
+          }  border border-gray-300!`}
         >
           <thead
-            className=" border !border-gray-300"
+            className=" border border-gray-300!"
             style={{
               top: 0,
               zIndex: 1,
@@ -213,7 +219,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
             <tr>
               {props.headers.map((header) => (
                 <th
-                  className={`${!props.noBorder ? "border-solid border !border-gray-300 bg-slate-100" : ""} `}
+                  className={`${!props.noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""} `}
                   key={`header-${header.id}`}
                 >
                   <div className="flex justify-between">
@@ -223,7 +229,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
                       ) : (
                         <button
                           onClick={() => onSortByColumn(header)}
-                          className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none !outline-none whitespace-pre ${
+                          className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
                             props.onRowDoubleClick && header.sortable
                               ? "cursor-pointer hover:underline"
                               : "cursor-default"
@@ -242,7 +248,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
                           />
                           <button
                             onClick={props.onResetSort}
-                            className={`border-solid border bg-slate-300 hover:!bg-slate-400 hover:border-transparent cursor-pointer  rounded-lg h-min  focus:!outline-none
+                            className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
                          `}
                           >
                             <Icon
@@ -289,7 +295,7 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
                 style={getRowStyle(item)}
                 className={`${
                   props.onRowDoubleClick ? "cursor-pointer" : ""
-                }  hover:outline-1 hover:outline  hover:outline-[#4849b9fa]`}
+                }  hover:outline-1 hover:outline-solid  hover:outline-[#4849b9fa]`}
                 onDoubleClick={() => onRowDoubleClick(item)}
                 key={`item-${i}`}
               >

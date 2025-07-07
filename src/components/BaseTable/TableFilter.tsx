@@ -106,7 +106,7 @@ function TableFilter(props: Readonly<TableFilterProps>) {
     <div ref={wrapperRef} className="relative">
       <button
         onClick={() => props.onShowOrHide(!props.show)}
-        className={`border-solid border hover:!border-primary cursor-pointer border-gray-300 rounded  focus:!outline-none ${
+        className={`border-solid border hover:!border-primary cursor-pointer border-gray-300 rounded  focus:outline-hidden! ${
           props.currentFilter ? "bg-purple-800" : "bg-white"
         } `}
       >
@@ -119,7 +119,7 @@ function TableFilter(props: Readonly<TableFilterProps>) {
       {props.show ? (
         <div
           ref={filterRef}
-          className={`absolute mt-1 bg-white shadow-sm p-3 w-60 z-10 rounded-md font-normal border border-border-color-light ${
+          className={`absolute mt-1 bg-white shadow-xs p-3 w-60 z-10 rounded-md font-normal border border-border-color-light ${
             showRight ? "right-0" : ""
           }`}
         >
@@ -138,14 +138,14 @@ function TableFilter(props: Readonly<TableFilterProps>) {
             <button
               onClick={selectAllItemHandler}
               onFocus={() => {}}
-              className="mr-4 cursor-pointer hover:!border-none !border-none focus:!outline-none bg-transparent btn-sm"
+              className="mr-4 cursor-pointer hover:border-none! border-none! focus:outline-hidden! bg-transparent"
             >
               Select All
             </button>
             <button
               onClick={clearAllItemHandler}
               onFocus={() => {}}
-              className="cursor-pointer hover:!border-none !border-none focus:!outline-none bg-transparent btn-sm"
+              className="cursor-pointer hover:border-none! border-none! focus:outline-hidden! bg-transparent"
             >
               Clear
             </button>
