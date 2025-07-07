@@ -25,8 +25,8 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
 
   const button = (
     <button
-      className={`btn ${props.className ?? ""} ${props.ghost ? " btn-ghost" : ""} btn-${
-        props.small ? "xs" : "sm"
+      className={`btn ${props.className ?? ""} ${props.ghost ? " btn-ghost" : ""} ${
+        props.small ? "btn-xs" : "btn-sm"
       } content-center`}
       onClick={() => props.onClick()}
       disabled={props.disabled === true}
