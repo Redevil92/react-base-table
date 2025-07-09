@@ -1,4 +1,4 @@
 export default interface ActiveTableFilter {
-    headerId: string;
-    itemsToHide: string[];
-  }
+  headerId: string;
+  itemsToHide: string[] | number[];
+}

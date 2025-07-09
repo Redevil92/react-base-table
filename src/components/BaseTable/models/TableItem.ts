@@ -1,3 +1,3 @@
 ﻿export default interface TableItem {
-  [key: string]: string;
+  [key: string]: string | number;
 }

@@ -10,13 +10,14 @@ import ActiveTableFilter from "./models/ActiveTableFilter";
 interface TableFilterProps {
   show: boolean;
   currentFilter?: ActiveTableFilter;
+  tableRef?: React.RefObject<HTMLTableElement>;
   filterName: string;
   headerId: string;
   filterType: FilterTypes;
-  items: string[];
-  itemsToHide: string[];
+  items: string[] | number[];
+  itemsToHide: string[] | number[];
   onShowOrHide: (show: boolean) => void;
-  onSetFilter: (id: string, valueToFilter: string[]) => void;
+  onSetFilter: (id: string, valueToFilter: string[] | number[]) => void;
 }
 
 function TableFilter(props: Readonly<TableFilterProps>) {
@@ -26,7 +27,9 @@ function TableFilter(props: Readonly<TableFilterProps>) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
 
-  const [filteredOutItems, setFilteredOutItems] = useState<string[]>([]);
+  const [filteredOutItems, setFilteredOutItems] = useState<(string | number)[]>(
+    []
+  );
 
   useEffect(() => {
     setFilteredOutItems(props.currentFilter?.itemsToHide ?? []);
@@ -35,10 +38,11 @@ function TableFilter(props: Readonly<TableFilterProps>) {
   useEffect(() => {
     if (props.show && filterRef.current) {
       const boundingRef = filterRef.current.getBoundingClientRect();
-      const tableMargin = 30;
-      const outsideScreen =
-        boundingRef.width + boundingRef.x + tableMargin > window.innerWidth;
-      setShowRight(outsideScreen);
+      const tableBoundingRef = props.tableRef?.current?.getBoundingClientRect();
+      const tableWidth = tableBoundingRef?.width ?? 0;
+
+      const outsideTable = boundingRef.width + boundingRef.x > tableWidth;
+      setShowRight(outsideTable);
     } else {
       setShowRight(false);
     }
@@ -71,14 +75,15 @@ function TableFilter(props: Readonly<TableFilterProps>) {
   };
 
   const clearAllItemHandler = () => {
-    setFilteredOutItems([...props.items]);
+    setFilteredOutItems([...props.items] as (string | number)[]);
   };
 
   const selectAllItemHandler = () => {
     setFilteredOutItems([]);
   };
 
-  const onItemCheck = (item: string) => {
+  const onItemCheck = (item: string | number) => {
+    console.log(item);
     const index = filteredOutItems.findIndex((i) => i === item);
     let updatedElements = [...filteredOutItems];
     if (index === -1) {
@@ -86,7 +91,7 @@ function TableFilter(props: Readonly<TableFilterProps>) {
     } else {
       updatedElements.splice(index, 1);
     }
-    setFilteredOutItems(updatedElements);
+    setFilteredOutItems(updatedElements as (string | number)[]);
   };
 
   const setFilterSelection = () => {
@@ -95,11 +100,14 @@ function TableFilter(props: Readonly<TableFilterProps>) {
     const checkedShowFilter = shownFilters.filter(
       (item) => !filteredOutItems.includes(item)
     );
-    const itemsToHide = props.items.filter(
+    const itemsToHide = [...props.items].filter(
       (item) => !checkedShowFilter.includes(item)
     );
 
-    props.onSetFilter(props.headerId, itemsToHide);
+    props.onSetFilter(
+      props.headerId,
+      itemsToHide.map((item) => item) as string[] | number[]
+    );
   };
 
   return (
@@ -138,14 +146,14 @@ function TableFilter(props: Readonly<TableFilterProps>) {
             <button
               onClick={selectAllItemHandler}
               onFocus={() => {}}
-              className="mr-4 cursor-pointer hover:border-none! border-none! focus:outline-hidden! bg-transparent"
+              className="mr-4 cursor-pointer hover:border-none! border-none! focus:outline-hidden! bg-transparent btn-sm"
             >
               Select All
             </button>
             <button
               onClick={clearAllItemHandler}
               onFocus={() => {}}
-              className="cursor-pointer hover:border-none! border-none! focus:outline-hidden! bg-transparent"
+              className="cursor-pointer hover:border-none! border-none! focus:outline-hidden! bg-transparent btn-sm"
             >
               Clear
             </button>
@@ -154,9 +162,9 @@ function TableFilter(props: Readonly<TableFilterProps>) {
             className="overflow-auto max-h-44 mt-2"
             style={{ scrollbarWidth: "thin" }}
           >
-            {getFilteredItems().map((item) => {
+            {getFilteredItems().map((item, index) => {
               return (
-                <div key={`filter-item-${item}`} className="flex mt-2">
+                <div key={`filter-item-${item}-${index}`} className="flex mt-2">
                   <input
                     type="checkbox"
                     onClick={() => onItemCheck(item)}

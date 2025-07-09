@@ -1,4 +1,4 @@
-﻿import { CSSProperties, useMemo, useState } from "react";
+﻿import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import BaseTableHeader from "./models/BaseTableHeaders";
 import TableItem from "./models/TableItem";
 import ActiveTableFilter from "./models/ActiveTableFilter";
@@ -11,9 +11,10 @@ import {
   mdiFilterOff,
 } from "@mdi/js";
 import Icon from "@mdi/react";
-import { alphabeticalSort, alphabeticalSortInverse } from "../../utils/sorting";
 import BaseButton from "../BaseButton";
 import { FilterTypes } from "../../enum/FilterTypes";
+import { filterItems, sortItems } from "./BaseTableFunctions";
+import CustomRenderItem from "./CustomRenderItem";
 
 export interface BaseTableProps {
   height?: string;
@@ -41,6 +42,16 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     props.activeFilters ?? []
   );
 
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  const [currentSortId, setCurrentSortId] = useState<string | undefined>(
+    props.currentSortId
+  );
+
+  useEffect(() => {
+    setCurrentSortId(props.currentSortId);
+  }, [props.currentSortId]);
+
   const [ascendingOrder, setAscendingOrder] = useState(true);
 
   const clearActiveFilters = () => {
@@ -50,42 +61,17 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
   const filteredItems = useMemo(() => {
     let items = [...props.items];
 
-    activeFilters.forEach((filter) => {
-      items = items.filter((item) => {
-        // handle number case, for now we stick to string filters
-        return !filter.itemsToHide.includes(item[filter.headerId]);
-      });
-    });
-
-    // no sorting case
-    if (!props.currentSortId) {
-      return items;
-    }
-
-    const header = props.headers.find(
-      (header) => header.id === props.currentSortId
+    items = filterItems(items, activeFilters);
+    items = sortItems(
+      items,
+      props.headers,
+      ascendingOrder ? "asc" : "desc",
+      currentSortId
     );
-
-    // sort
-    if (header?.customSort) {
-      items.sort((a: TableItem, b: TableItem) =>
-        header.customSort!(a, b, ascendingOrder)
-      );
-    } else {
-      const sortingFunction = ascendingOrder
-        ? alphabeticalSortInverse
-        : alphabeticalSort;
-      items.sort((a: TableItem, b: TableItem) => {
-        return sortingFunction(
-          b[props.currentSortId!],
-          a[props.currentSortId!]
-        );
-      });
-    }
 
     return items;
   }, [
-    props.currentSortId,
+    currentSortId,
     props.items,
     props.headers,
     ascendingOrder,
@@ -104,7 +90,10 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     return activeFilters.find((filter) => filter.headerId === headerId);
   };
 
-  const setActiveTableFilters = (headerId: string, itemsToHide: string[]) => {
+  const setActiveTableFilters = (
+    headerId: string,
+    itemsToHide: string[] | number[]
+  ) => {
     const filters = [...activeFilters];
     const index = filters.findIndex((filter) => filter.headerId === headerId);
 
@@ -124,17 +113,55 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     setActiveFilters(filters);
   };
 
-  const getFilterItemsForHeader = (headerId: string) => {
-    let items = filteredItems.map((item) => item[headerId]);
-    const currentFilter = activeFilters.find(
-      (filter) => filter.headerId === headerId
-    );
-
-    if (currentFilter) {
-      items = items.concat(currentFilter.itemsToHide);
+  function renderAllHeaderRows(
+    headers: BaseTableHeader[],
+    depth: number,
+    currentLevel = 0
+  ): React.ReactNode[] {
+    const row = renderHeaderRows(headers, depth, currentLevel);
+    const children = headers
+      .filter((h) => h.children && h.children.length > 0)
+      .map((h) => h.children!)
+      .flat();
+    if (children.length > 0) {
+      return [row, ...renderAllHeaderRows(children, depth, currentLevel + 1)];
     }
+    return [row];
+  }
 
-    return [...new Set(items)];
+  function getLeafHeaders(headers: BaseTableHeader[]): BaseTableHeader[] {
+    return headers.flatMap((h) =>
+      h.children && h.children.length > 0 ? getLeafHeaders(h.children) : [h]
+    );
+  }
+
+  const leafHeaders = useMemo(
+    () => getLeafHeaders(props.headers),
+    [props.headers]
+  );
+
+  const filterItemsCache = useMemo(() => {
+    const cache: Record<string, (string | number)[]> = {};
+    leafHeaders.forEach((header) => {
+      let items = filteredItems.map((item) => item[header.id]);
+      const currentFilter = activeFilters.find(
+        (filter) => filter.headerId === header.id
+      );
+      if (currentFilter) {
+        items = items.concat(currentFilter.itemsToHide);
+      }
+      // Only keep string, number, or undefined
+      cache[header.id] = [...new Set(items)].filter(
+        (item): item is string | number =>
+          typeof item === "string" || typeof item === "number"
+      );
+    });
+    console.log("Filter items cache:", cache);
+    return cache;
+  }, [filteredItems, activeFilters, leafHeaders]);
+
+  const getFilterItemsForHeader = (headerId: string): string[] | number[] => {
+    return (filterItemsCache[headerId] as string[] | number[]) ?? [];
   };
 
   const onRowDoubleClick = (item: TableItem) => {
@@ -143,17 +170,25 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     }
   };
 
+  const onResetSort = () => {
+    setCurrentSortId(undefined);
+    setAscendingOrder(true);
+    props.onResetSort?.();
+  };
+
   const onSortByColumn = (header: BaseTableHeader | undefined) => {
     if (!header?.sortable) {
       return;
     }
 
     let isAscendingOrder;
-    if (props.currentSortId === header.id) {
+    if (currentSortId === header.id) {
       isAscendingOrder = !ascendingOrder;
     } else {
       isAscendingOrder = true;
     }
+    setCurrentSortId(header.id);
+
     setAscendingOrder(isAscendingOrder);
 
     props.onSortByColumn?.(header.id);
@@ -171,6 +206,111 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     return style.style;
   };
 
+  function getHeaderDepth(headers: BaseTableHeader[]): number {
+    return headers.reduce((max, h) => {
+      if (h.children && h.children.length > 0) {
+        return Math.max(max, 1 + getHeaderDepth(h.children));
+      }
+      return Math.max(max, 1);
+    }, 0);
+  }
+
+  function getColSpan(header: BaseTableHeader): number {
+    if (header.children && header.children.length > 0) {
+      return header.children.reduce((sum, child) => sum + getColSpan(child), 0);
+    }
+    return 1;
+  }
+
+  function renderHeaderRows(
+    headers: BaseTableHeader[],
+    depth: number,
+    currentLevel = 0
+  ): React.ReactNode {
+    if (headers.length === 0) return null;
+    return (
+      <tr>
+        {headers.map((header, index) => {
+          const colSpan = getColSpan(header);
+          const hasChildren = header.children && header.children.length > 0;
+          const rowSpan = hasChildren ? 1 : depth - currentLevel;
+
+          return (
+            <th
+              key={header.id + `-${index}`}
+              colSpan={colSpan}
+              rowSpan={rowSpan}
+              className={`${!props.noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""}`}
+            >
+              <div className="flex justify-between">
+                <div className="flex">
+                  {header.customHeader ? (
+                    header.customHeader(header)
+                  ) : (
+                    <button
+                      onClick={() => onSortByColumn(header)}
+                      className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
+                        header.sortable
+                          ? "cursor-pointer hover:underline"
+                          : "cursor-default"
+                      }`}
+                    >
+                      {header.text}
+                    </button>
+                  )}
+
+                  {currentSortId === header.id && (
+                    <>
+                      <Icon
+                        path={ascendingOrder ? mdiArrowUp : mdiArrowDown}
+                        color={"grey"}
+                        size={0.6}
+                      />
+                      <button
+                        onClick={onResetSort}
+                        className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
+                         `}
+                      >
+                        <Icon path={mdiCloseCircle} color={"grey"} size={0.6} />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {header.hasFilter ? (
+                  <div className="ml-2">
+                    <TableFilter
+                      show={filterToShow === header.id}
+                      tableRef={tableRef}
+                      currentFilter={getFilterForHeader(header.id)}
+                      filterName={header.text}
+                      headerId={header.id}
+                      filterType={FilterTypes.STRING}
+                      items={getFilterItemsForHeader(header.id)}
+                      itemsToHide={
+                        activeFilters.find(
+                          (filter) => filter.headerId === header.id
+                        )?.itemsToHide ?? []
+                      }
+                      onShowOrHide={(show: boolean) =>
+                        showFilterHandler(show, header.id)
+                      }
+                      onSetFilter={setActiveTableFilters}
+                    />
+                  </div>
+                ) : (
+                  <></>
+                )}
+              </div>
+            </th>
+          );
+        })}
+      </tr>
+    );
+  }
+
+  const headerDepth = getHeaderDepth(props.headers);
+
   return (
     <>
       {activeFilters.length > 0 && (
@@ -186,12 +326,6 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
         </div>
       )}
 
-      <div>
-        <button className={`btn btn-xs btn-accent btn-soft`}>Small</button>
-        <button className="btn btn-sm btn-accent btn-soft">Small</button>
-        <button className="btn  btn-accent btn-soft">Small</button>
-      </div>
-
       <div
         className="overflow-x-auto"
         style={{
@@ -204,91 +338,14 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
         }}
       >
         <table
+          ref={tableRef}
           style={{ width: "100%", position: "unset" }}
           className={`table table-xs table-pin-rows ${
             props.pinColumns ? "table-pin-cols" : ""
           }  border border-gray-300!`}
         >
-          <thead
-            className=" border border-gray-300!"
-            style={{
-              top: 0,
-              zIndex: 1,
-            }}
-          >
-            <tr>
-              {props.headers.map((header) => (
-                <th
-                  className={`${!props.noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""} `}
-                  key={`header-${header.id}`}
-                >
-                  <div className="flex justify-between">
-                    <div className="flex">
-                      {header.customHeader ? (
-                        header.customHeader(header)
-                      ) : (
-                        <button
-                          onClick={() => onSortByColumn(header)}
-                          className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
-                            props.onRowDoubleClick && header.sortable
-                              ? "cursor-pointer hover:underline"
-                              : "cursor-default"
-                          }`}
-                        >
-                          {header.text}
-                        </button>
-                      )}
+          <thead>{renderAllHeaderRows(props.headers, headerDepth)}</thead>
 
-                      {props.currentSortId === header.id && (
-                        <>
-                          <Icon
-                            path={ascendingOrder ? mdiArrowUp : mdiArrowDown}
-                            color={"grey"}
-                            size={0.6}
-                          />
-                          <button
-                            onClick={props.onResetSort}
-                            className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
-                         `}
-                          >
-                            <Icon
-                              path={mdiCloseCircle}
-                              color={"grey"}
-                              size={0.6}
-                            />
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    {header.hasFilter ? (
-                      <div className="ml-2">
-                        <TableFilter
-                          show={filterToShow === header.id}
-                          currentFilter={getFilterForHeader(header.id)}
-                          filterName={header.text}
-                          headerId={header.id}
-                          filterType={FilterTypes.STRING}
-                          items={getFilterItemsForHeader(header.id)}
-                          itemsToHide={
-                            activeFilters.find(
-                              (filter) => filter.headerId === header.id
-                            )?.itemsToHide ?? []
-                          }
-                          onShowOrHide={(show: boolean) =>
-                            showFilterHandler(show, header.id)
-                          }
-                          onSetFilter={setActiveTableFilters}
-                        />
-                      </div>
-                    ) : (
-                      <></>
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
           <tbody>
             {filteredItems.map((item, i) => (
               <tr
@@ -299,28 +356,23 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
                 onDoubleClick={() => onRowDoubleClick(item)}
                 key={`item-${i}`}
               >
-                {props.headers.map((header, j) => (
+                {leafHeaders.map((header, j) => (
                   <td
                     key={`item-${j}-${header.id}`}
                     className={` ${!props.noBorder ? "border-solid border  " : ""}  
                   ${props.alignCenterInLine && j === 0 ? "text-center" : ""}
                   ${i % 2 ? "" : "bg-blue-50/50"} `}
                   >
-                    {header.customRender
-                      ? header.customRender(item, header)
-                      : item[header.id]}
+                    {header.customRender ? (
+                      <CustomRenderItem item={item} header={header} />
+                    ) : (
+                      (item as TableItem)[header.id]
+                    )}
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
-          {/* <tfoot>
-          <tr>
-            {props.headers.map((header) => (
-              <th>{header.text}</th>
-            ))}
-          </tr>
-        </tfoot> */}
         </table>
       </div>
     </>
