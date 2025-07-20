@@ -1,22 +1,27 @@
-﻿import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+﻿import {
+  CSSProperties,
+  Fragment,
+  ReactNode,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import BaseTableHeader from "./models/BaseTableHeaders";
 import TableItem from "./models/TableItem";
 import ActiveTableFilter from "./models/ActiveTableFilter";
-import TableFilter from "./TableFilter";
 
-import {
-  mdiArrowDown,
-  mdiArrowUp,
-  mdiCloseCircle,
-  mdiFilterOff,
-} from "@mdi/js";
-import Icon from "@mdi/react";
+import { mdiFilterOff } from "@mdi/js";
 import BaseButton from "../BaseButton";
-import { FilterTypes } from "../../enum/FilterTypes";
-import { filterItems, sortItems } from "./BaseTableFunctions";
-import CustomRenderItem from "./CustomRenderItem";
+import BaseTableCell from "./BaseTableCell";
+import BaseTableHeaders from "./BaseTableHeaders";
+import useTableData from "./hooks/useTableData";
+import useTableGrouping from "./hooks/useTableGrouping";
+import { useTableInteractions } from "./hooks/useTableInteractions";
+import { useVirtualRows } from "./hooks/useVirtualRows";
+import ItemWithGroupInfo from "./models/ItemWithGroupInfo";
+import BaseTableGroupRow from "./BaseTableGroupRow";
 
-export interface BaseTableProps {
+export interface BaseTableProps<T> {
   height?: string;
   headers: BaseTableHeader[];
   items: TableItem[];
@@ -30,104 +35,51 @@ export interface BaseTableProps {
     value: unknown;
     style: CSSProperties;
   }[];
+  showIndex?: boolean;
+  indexUseOriginalOrder?: boolean; // If true, uses original order from props.items, otherwise uses grouped order
+  contrastRow?: boolean;
   activeFilters?: ActiveTableFilter[];
+  groupBy?: string;
+  linkedGroups?: { master: string; linked: string[] }[];
+  onChange?: (itemUpdated: T, originalIndex: number) => void;
+  onBulkChange?: (items: { itemUpdated: T; originalIndex: number }[]) => void;
+  groupByCustomRender?: (groupBy: string, value: string) => ReactNode;
   onResetSort?: () => void;
-  onRowDoubleClick?: (item: TableItem) => void;
+  onRowDoubleClick?: (item: T) => void;
   onSortByColumn?: (columnId: string) => void;
 }
 
-export default function BaseTable(props: Readonly<BaseTableProps>) {
-  const [filterToShow, setFilterToShow] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveTableFilter[]>(
-    props.activeFilters ?? []
-  );
-
+export default function BaseTable<T extends TableItem>(
+  props: Readonly<BaseTableProps<T>>
+) {
   const tableRef = useRef<HTMLTableElement>(null);
 
-  const [currentSortId, setCurrentSortId] = useState<string | undefined>(
-    props.currentSortId
-  );
+  // const [collapsedGroups, setCollapsedGroup] = useState<string[]>([]);
 
-  useEffect(() => {
-    setCurrentSortId(props.currentSortId);
-  }, [props.currentSortId]);
+  const originalIndexMap = useMemo(() => {
+    const map = new Map();
+    props.items.forEach((item, index) => {
+      map.set(item, index + 1); // +1 for 1-based indexing
+    });
+    return map;
+  }, [props.items]);
 
-  const [ascendingOrder, setAscendingOrder] = useState(true);
-
-  const clearActiveFilters = () => {
-    setActiveFilters([]);
-  };
-
-  const filteredItems = useMemo(() => {
-    let items = [...props.items];
-
-    items = filterItems(items, activeFilters);
-    items = sortItems(
-      items,
-      props.headers,
-      ascendingOrder ? "asc" : "desc",
-      currentSortId
-    );
-
-    return items;
-  }, [
-    currentSortId,
-    props.items,
-    props.headers,
-    ascendingOrder,
-    activeFilters,
-  ]);
-
-  const showFilterHandler = (show: boolean, filterId: string) => {
-    if (!show) {
-      setFilterToShow("");
-      return;
+  const headersWithIndexColumn = useMemo<BaseTableHeader[]>(() => {
+    if (props.showIndex) {
+      return [
+        {
+          id: "_index",
+          text: "",
+          sortable: false,
+          align: "right",
+          children: [],
+          width: 30,
+        },
+        ...props.headers,
+      ];
     }
-    setFilterToShow(filterId);
-  };
-
-  const getFilterForHeader = (headerId: string) => {
-    return activeFilters.find((filter) => filter.headerId === headerId);
-  };
-
-  const setActiveTableFilters = (
-    headerId: string,
-    itemsToHide: string[] | number[]
-  ) => {
-    const filters = [...activeFilters];
-    const index = filters.findIndex((filter) => filter.headerId === headerId);
-
-    if (index !== -1) {
-      if (itemsToHide.length > 0) {
-        //update filter
-        filters[index] = { headerId, itemsToHide };
-      } else {
-        // remove filter
-        filters.splice(index, 1);
-      }
-    } else if (itemsToHide.length > 0) {
-      // add filter
-      filters.push({ headerId, itemsToHide });
-    }
-
-    setActiveFilters(filters);
-  };
-
-  function renderAllHeaderRows(
-    headers: BaseTableHeader[],
-    depth: number,
-    currentLevel = 0
-  ): React.ReactNode[] {
-    const row = renderHeaderRows(headers, depth, currentLevel);
-    const children = headers
-      .filter((h) => h.children && h.children.length > 0)
-      .map((h) => h.children!)
-      .flat();
-    if (children.length > 0) {
-      return [row, ...renderAllHeaderRows(children, depth, currentLevel + 1)];
-    }
-    return [row];
-  }
+    return props.headers;
+  }, [props.headers, props.showIndex]);
 
   function getLeafHeaders(headers: BaseTableHeader[]): BaseTableHeader[] {
     return headers.flatMap((h) =>
@@ -140,58 +92,83 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     [props.headers]
   );
 
-  const filterItemsCache = useMemo(() => {
-    const cache: Record<string, (string | number)[]> = {};
-    leafHeaders.forEach((header) => {
-      let items = filteredItems.map((item) => item[header.id]);
-      const currentFilter = activeFilters.find(
-        (filter) => filter.headerId === header.id
-      );
-      if (currentFilter) {
-        items = items.concat(currentFilter.itemsToHide);
-      }
-      // Only keep string, number, or undefined
-      cache[header.id] = [...new Set(items)].filter(
-        (item): item is string | number =>
-          typeof item === "string" || typeof item === "number"
-      );
-    });
-    console.log("Filter items cache:", cache);
-    return cache;
-  }, [filteredItems, activeFilters, leafHeaders]);
-
-  const getFilterItemsForHeader = (headerId: string): string[] | number[] => {
-    return (filterItemsCache[headerId] as string[] | number[]) ?? [];
-  };
-
   const onRowDoubleClick = (item: TableItem) => {
     if (props.onRowDoubleClick) {
-      props.onRowDoubleClick(item);
+      props.onRowDoubleClick(item as T);
     }
   };
 
-  const onResetSort = () => {
-    setCurrentSortId(undefined);
-    setAscendingOrder(true);
-    props.onResetSort?.();
-  };
+  const {
+    activeFilters,
+    clearActiveFilters,
+    setActiveTableFilter,
+    filterItemsCache,
+    currentSortId,
+    ascendingOrder,
+    onResetSort,
+    onSortByColumn,
+    processedItems: filteredItems,
+  } = useTableData(
+    props.items,
+    props.headers,
+    props.activeFilters ?? [],
+    props.currentSortId,
+    props.onSortByColumn
+  );
 
-  const onSortByColumn = (header: BaseTableHeader | undefined) => {
-    if (!header?.sortable) {
-      return;
-    }
+  const {
+    groupedItemsEntries,
+    collapsedGroups,
+    flatGroupedItemsToDisplay,
+    onCollapseGroup,
+    isGroupLinked,
+  } = useTableGrouping(filteredItems, props.groupBy, props.linkedGroups);
 
-    let isAscendingOrder;
-    if (currentSortId === header.id) {
-      isAscendingOrder = !ascendingOrder;
+  const {
+    selectedCell,
+    expandedSelection,
+    isDragging,
+    onCellBlur,
+    onCellEnter,
+    onCellClick,
+    handleCellKeyDown,
+    onCellMouseDown,
+    onCellMouseEnter,
+    onMouseMove,
+  } = useTableInteractions({
+    headers: leafHeaders,
+    items: props.items,
+    groupedItemsEntries: props.groupBy ? groupedItemsEntries : undefined,
+    onChange: props.onChange,
+    onBulkChange: props.onBulkChange,
+    onRowDoubleClick: props.onRowDoubleClick,
+  });
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const displayedRowsCount = useMemo(() => {
+    if (!props.groupBy) {
+      return filteredItems.length;
     } else {
-      isAscendingOrder = true;
+      let count = 0;
+      groupedItemsEntries.forEach(([groupKey, items]) => {
+        count += 1; // group header
+        if (!collapsedGroups.includes(groupKey)) {
+          count += items.length;
+        }
+      });
+      return count;
     }
-    setCurrentSortId(header.id);
+  }, [filteredItems, groupedItemsEntries, collapsedGroups, props.groupBy]);
 
-    setAscendingOrder(isAscendingOrder);
+  const { virtualRows, before, after } = useVirtualRows({
+    scrollRef: scrollRef,
+    rowsCount: displayedRowsCount,
+  });
 
-    props.onSortByColumn?.(header.id);
+  const collapseGroupHandler = (group: string) => {
+    console.log("Collapse group handler called for group:", group);
+    onCollapseGroup(group);
   };
 
   const getRowStyle = (row: TableItem) => {
@@ -206,110 +183,73 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
     return style.style;
   };
 
-  function getHeaderDepth(headers: BaseTableHeader[]): number {
-    return headers.reduce((max, h) => {
-      if (h.children && h.children.length > 0) {
-        return Math.max(max, 1 + getHeaderDepth(h.children));
-      }
-      return Math.max(max, 1);
-    }, 0);
-  }
-
-  function getColSpan(header: BaseTableHeader): number {
-    if (header.children && header.children.length > 0) {
-      return header.children.reduce((sum, child) => sum + getColSpan(child), 0);
-    }
-    return 1;
-  }
-
-  function renderHeaderRows(
-    headers: BaseTableHeader[],
-    depth: number,
-    currentLevel = 0
-  ): React.ReactNode {
-    if (headers.length === 0) return null;
+  const renderIndexCell = (rowIndex: number, item: TableItem) => {
     return (
-      <tr>
-        {headers.map((header, index) => {
-          const colSpan = getColSpan(header);
-          const hasChildren = header.children && header.children.length > 0;
-          const rowSpan = hasChildren ? 1 : depth - currentLevel;
-
-          return (
-            <th
-              key={header.id + `-${index}`}
-              colSpan={colSpan}
-              rowSpan={rowSpan}
-              className={`${!props.noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""}`}
-            >
-              <div className="flex justify-between">
-                <div className="flex">
-                  {header.customHeader ? (
-                    header.customHeader(header)
-                  ) : (
-                    <button
-                      onClick={() => onSortByColumn(header)}
-                      className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
-                        header.sortable
-                          ? "cursor-pointer hover:underline"
-                          : "cursor-default"
-                      }`}
-                    >
-                      {header.text}
-                    </button>
-                  )}
-
-                  {currentSortId === header.id && (
-                    <>
-                      <Icon
-                        path={ascendingOrder ? mdiArrowUp : mdiArrowDown}
-                        color={"grey"}
-                        size={0.6}
-                      />
-                      <button
-                        onClick={onResetSort}
-                        className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
-                         `}
-                      >
-                        <Icon path={mdiCloseCircle} color={"grey"} size={0.6} />
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {header.hasFilter ? (
-                  <div className="ml-2">
-                    <TableFilter
-                      show={filterToShow === header.id}
-                      tableRef={tableRef}
-                      currentFilter={getFilterForHeader(header.id)}
-                      filterName={header.text}
-                      headerId={header.id}
-                      filterType={FilterTypes.STRING}
-                      items={getFilterItemsForHeader(header.id)}
-                      itemsToHide={
-                        activeFilters.find(
-                          (filter) => filter.headerId === header.id
-                        )?.itemsToHide ?? []
-                      }
-                      onShowOrHide={(show: boolean) =>
-                        showFilterHandler(show, header.id)
-                      }
-                      onSetFilter={setActiveTableFilters}
-                    />
-                  </div>
-                ) : (
-                  <></>
-                )}
-              </div>
-            </th>
-          );
-        })}
-      </tr>
+      <td className="text-right pr-4 bg-gray-100 font-medium">
+        {props.groupBy
+          ? props.indexUseOriginalOrder
+            ? originalIndexMap.get(filteredItems[rowIndex])
+            : rowIndex + 1
+          : originalIndexMap.get(item)}
+      </td>
     );
-  }
+  };
 
-  const headerDepth = getHeaderDepth(props.headers);
+  const handleCellMouseDown = useCallback(
+    (
+      e: React.MouseEvent<HTMLTableCellElement>,
+      rowIndex: number,
+      columnIndex: number
+    ) => {
+      onCellMouseDown(e, rowIndex, columnIndex);
+    },
+    [onCellMouseDown]
+  );
+
+  const handleCellMouseEnter = (
+    e: React.MouseEvent<HTMLTableCellElement>,
+    rowIndex: number,
+    columnIndex: number
+  ) => {
+    onCellMouseEnter(e, rowIndex, columnIndex);
+  };
+
+  const renderBaseTableCell = (
+    item: TableItem,
+    header: BaseTableHeader,
+    rowIndex: number,
+    columnIndex: number,
+    disabled?: boolean
+  ) => {
+    return (
+      <BaseTableCell
+        isSelected={
+          selectedCell?.rowIndex === rowIndex &&
+          selectedCell?.columnIndex === columnIndex
+        }
+        disabled={disabled}
+        isInExpandedSelection={
+          expandedSelection?.some(
+            (cell) =>
+              cell.rowIndex === rowIndex && cell.columnIndex === columnIndex
+          ) || false
+        }
+        key={`item-${rowIndex}-${columnIndex}`}
+        header={header}
+        item={item}
+        rowIndex={rowIndex}
+        columnIndex={columnIndex}
+        noBorder={props.noBorder}
+        contrastRow={props.contrastRow}
+        onClick={onCellClick}
+        onEnter={onCellEnter}
+        onBlur={onCellBlur}
+        onKeyDown={handleCellKeyDown}
+        onMouseDown={(e) => handleCellMouseDown(e, rowIndex, columnIndex)}
+        onMouseEnter={(e) => handleCellMouseEnter(e, rowIndex, columnIndex)}
+      />
+    );
+  };
 
   return (
     <>
@@ -325,53 +265,187 @@ export default function BaseTable(props: Readonly<BaseTableProps>) {
           />
         </div>
       )}
-
+      {expandedSelection.length}
+      {" - items: "}
+      {filteredItems.length}
+      {" - v. rows: "}
+      {virtualRows.length}
+      {" - before: "}
+      {before}
+      {" - after: "}
+      {after}
       <div
-        className="overflow-x-auto"
+        ref={scrollRef}
+        className="overflow-auto h-min"
         style={{
           overflow: "auto", //our scrollable table container
           // position: 'relative', //needed for sticky header
           height:
             props.height ??
-            `calc(100vh - ${props.marginTop ? props.marginTop : "4rem"})`, //should be a fixed height
+            `calc(100vh - ${props.marginTop ? props.marginTop : "6rem"})`, //should be a fixed height
           scrollbarWidth: "thin",
         }}
       >
         <table
           ref={tableRef}
-          style={{ width: "100%", position: "unset" }}
+          onMouseMove={onMouseMove}
+          style={{
+            width: "100%",
+            position: "unset",
+            userSelect: isDragging ? "none" : "auto",
+            WebkitUserSelect: isDragging ? "none" : "auto",
+          }}
           className={`table table-xs table-pin-rows ${
             props.pinColumns ? "table-pin-cols" : ""
           }  border border-gray-300!`}
+          // onKeyDown={(e) =>
+          //   handleCellKeyDown(
+          //     e,
+          //     selectedCell?.rowIndex ?? 0,
+          //     selectedCell?.columnIndex ?? 0,
+          //     filteredItems.length,
+          //     leafHeaders.length
+          //   )
+          // }
         >
-          <thead>{renderAllHeaderRows(props.headers, headerDepth)}</thead>
+          <BaseTableHeaders
+            headers={headersWithIndexColumn}
+            noBorder={props.noBorder}
+            alignCenterInLine={props.alignCenterInLine}
+            currentSortId={currentSortId}
+            activeFilters={activeFilters}
+            tableRef={tableRef}
+            ascendingOrder={ascendingOrder}
+            filterItemsCache={filterItemsCache}
+            onResetSort={onResetSort}
+            onSortByColumn={onSortByColumn}
+            onSetFilter={setActiveTableFilter}
+          />
 
           <tbody>
-            {filteredItems.map((item, i) => (
-              <tr
-                style={getRowStyle(item)}
-                className={`${
-                  props.onRowDoubleClick ? "cursor-pointer" : ""
-                }  hover:outline-1 hover:outline-solid  hover:outline-[#4849b9fa]`}
-                onDoubleClick={() => onRowDoubleClick(item)}
-                key={`item-${i}`}
-              >
-                {leafHeaders.map((header, j) => (
-                  <td
-                    key={`item-${j}-${header.id}`}
-                    className={` ${!props.noBorder ? "border-solid border  " : ""}  
-                  ${props.alignCenterInLine && j === 0 ? "text-center" : ""}
-                  ${i % 2 ? "" : "bg-blue-50/50"} `}
-                  >
-                    {header.customRender ? (
-                      <CustomRenderItem item={item} header={header} />
-                    ) : (
-                      (item as TableItem)[header.id]
-                    )}
-                  </td>
-                ))}
+            {before > 0 && (
+              <tr>
+                <td colSpan={leafHeaders.length} style={{ height: before }} />
               </tr>
-            ))}
+            )}
+            {props.groupBy ? (
+              <>
+                {virtualRows.map((virtualRows) => {
+                  const itemOrGroup =
+                    flatGroupedItemsToDisplay[virtualRows.index];
+
+                  if (itemOrGroup.isGroup === true) {
+                    return (
+                      <Fragment key={`group-${itemOrGroup.groupName}`}>
+                        <BaseTableGroupRow
+                          colSpan={
+                            leafHeaders.length + (props.showIndex ? 1 : 0)
+                          }
+                          groupBy={props.groupBy!}
+                          groupName={itemOrGroup.groupName}
+                          isCollapsed={collapsedGroups.includes(
+                            itemOrGroup.groupName
+                          )}
+                          onCollapseGroup={() =>
+                            collapseGroupHandler(itemOrGroup.groupName)
+                          }
+                          groupByCustomRender={props.groupByCustomRender}
+                        />
+                      </Fragment>
+                      // <tr
+                      //   key={`group-${virtualRows.index}`}
+                      //   className="bg-purple-50"
+                      // >
+                      //   {props.groupByCustomRender ? (
+                      //     props.groupByCustomRender(
+                      //       props.groupBy!,
+                      //       itemOrGroup.groupName
+                      //     )
+                      //   ) : (
+                      //     <td
+                      //       colSpan={
+                      //         leafHeaders.length + (props.showIndex ? 1 : 0)
+                      //       }
+                      //       className="font-semibold"
+                      //     >
+                      //       <button
+                      //         onClick={() =>
+                      //           onCollapseGroup(itemOrGroup.groupName)
+                      //         }
+                      //         className="btn btn-xs btn-circle btn-primary mr-2"
+                      //       >
+                      //         {collapsedGroups.includes(
+                      //           itemOrGroup.groupName
+                      //         ) ? (
+                      //           <span>+</span>
+                      //         ) : (
+                      //           <span>-</span>
+                      //         )}
+                      //       </button>
+                      //       <span>{itemOrGroup.groupName}</span>
+                      //     </td>
+                      //   )}
+                      // </tr>
+                    );
+                  } else {
+                    const itemWithGroupInfo = itemOrGroup as ItemWithGroupInfo;
+                    return (
+                      <tr
+                        style={getRowStyle(itemWithGroupInfo.item)}
+                        className={`${
+                          props.onRowDoubleClick ? "cursor-pointer" : ""
+                        }  hover:outline-1 hover:outline-solid  hover:outline-[#484ab963]`}
+                        onDoubleClick={() =>
+                          onRowDoubleClick(itemWithGroupInfo.item)
+                        }
+                        key={`item-${itemWithGroupInfo.rowIndex}`}
+                      >
+                        {renderIndexCell(
+                          itemWithGroupInfo.rowIndex,
+                          itemWithGroupInfo.item
+                        )}
+
+                        {leafHeaders.map((header, j) =>
+                          renderBaseTableCell(
+                            itemWithGroupInfo.item,
+                            header,
+                            itemWithGroupInfo.rowIndex,
+                            j,
+                            isGroupLinked(itemWithGroupInfo.groupName)
+                          )
+                        )}
+                      </tr>
+                    );
+                  }
+                })}
+              </>
+            ) : (
+              <>
+                {virtualRows.map((virtualRows) => {
+                  const item = filteredItems[virtualRows.index];
+                  return (
+                    <tr
+                      style={getRowStyle(item)}
+                      className={`${
+                        props.onRowDoubleClick ? "cursor-pointer" : ""
+                      }  hover:outline-1 hover:outline-solid  hover:outline-[#4849b9fa]`}
+                      onDoubleClick={() => onRowDoubleClick(item)}
+                      key={`item-${virtualRows.index}`}
+                    >
+                      {renderIndexCell(virtualRows.index, item)}
+                      {leafHeaders.map((header, j) =>
+                        renderBaseTableCell(item, header, virtualRows.index, j)
+                      )}
+                    </tr>
+                  );
+                })}
+              </>
+            )}
+            {after > 0 && (
+              <tr>
+                <td colSpan={leafHeaders.length} style={{ height: after }} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

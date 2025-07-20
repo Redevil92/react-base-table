@@ -1,10 +1,12 @@
 ﻿import Icon from "@mdi/react";
+import { useMemo } from "react";
 
 interface BaseButtonInterface {
   text?: string;
   onClick: () => void;
   ghost?: boolean;
   small?: boolean;
+  circle?: boolean;
   tooltip?: string;
   tooltipRight?: boolean;
   disabled?: boolean;
@@ -16,18 +18,18 @@ interface BaseButtonInterface {
 }
 
 export default function BaseButton(props: Readonly<BaseButtonInterface>) {
-  const iconSize = () => {
+  const iconSize = useMemo(() => {
     if (props.iconSize) {
       return props.iconSize;
     }
     return props.small ? 0.8 : 1;
-  };
+  }, [props.iconSize, props.small]);
 
   const button = (
     <button
       className={`btn ${props.className ?? ""} ${props.ghost ? " btn-ghost" : ""} ${
         props.small ? "btn-xs" : "btn-sm"
-      } content-center`}
+      } content-center ${props.circle ? "btn-circle" : ""}`}
       onClick={() => props.onClick()}
       disabled={props.disabled === true}
     >
@@ -39,7 +41,7 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
               ? (props.iconColorDisabled ?? "lightgrey")
               : props.iconColor
           }
-          size={iconSize()}
+          size={iconSize}
         />
       )}
 

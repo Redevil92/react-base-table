@@ -1,3 +1,5 @@
+import TableItem from "../components/BaseTable/models/TableItem";
+
 export const arrayMove = <T>(
   array: Array<T>,
   fromIndex: number,
@@ -12,7 +14,7 @@ export const removeDuplicates = (arr: string[]): string[] => {
   return [...new Set(arr)];
 };
 
-export const isArrayOfType = <T>(array: unknown[], type: T): boolean => {
+export const isArrayOfType = <T>(array: TableItem[], type: T): boolean => {
   return array.every((item) => typeof item === type);
 };
 

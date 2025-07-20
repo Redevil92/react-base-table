@@ -33,7 +33,7 @@ function TableFilter(props: Readonly<TableFilterProps>) {
 
   useEffect(() => {
     setFilteredOutItems(props.currentFilter?.itemsToHide ?? []);
-  }, [props.currentFilter?.itemsToHide]);
+  }, [props.currentFilter?.itemsToHide, props.show]);
 
   useEffect(() => {
     if (props.show && filterRef.current) {

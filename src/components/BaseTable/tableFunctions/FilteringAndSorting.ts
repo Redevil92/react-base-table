@@ -1,8 +1,11 @@
-import { isNumberArray } from "../../utils/array";
-import { alphabeticalSort, alphabeticalSortInverse } from "../../utils/sorting";
-import ActiveTableFilter from "./models/ActiveTableFilter";
-import BaseTableHeader from "./models/BaseTableHeaders";
-import TableItem from "./models/TableItem";
+import { isNumberArray } from "../../../utils/array";
+import {
+  alphabeticalSort,
+  alphabeticalSortInverse,
+} from "../../../utils/sorting";
+import ActiveTableFilter from "../models/ActiveTableFilter";
+import BaseTableHeader from "../models/BaseTableHeaders";
+import TableItem from "../models/TableItem";
 
 export const NBSP = "\u00A0";
 
@@ -13,7 +16,7 @@ export const filterItems = (
   if (items.length === 0) return [];
   if (filters.length === 0) return [...items];
 
-  return [...items].filter((item: TableItem) => {
+  return [...items].filter((item: any) => {
     for (const filter of filters) {
       let itemToCheck: string | number | boolean = item[filter.headerId];
       let shouldHide = false;
@@ -29,9 +32,7 @@ export const filterItems = (
             ? itemToCheck.split(NBSP).join("")
             : itemToCheck;
         shouldHide = filter.itemsToHide.includes(Number(itemToCheck));
-      } else if (
-        (filter.itemsToHide as string[]).includes(itemToCheck as string)
-      ) {
+      } else if ((filter.itemsToHide as any[]).includes(itemToCheck)) {
         shouldHide = true;
       }
       // If ANY filter would hide this item, filter it out
@@ -49,19 +50,21 @@ export const sortItems = (
   currentSortType: "asc" | "desc",
   sortBy: string | undefined
 ): TableItem[] => {
-  if (!sortBy) return items;
+  let itemsCopy = [...items];
+
+  if (!sortBy) return itemsCopy;
 
   const header = headers.find((item) => item.id === sortBy);
 
   if (header?.customSort) {
-    items.sort((a: TableItem, b: TableItem) =>
+    itemsCopy.sort((a: TableItem, b: TableItem) =>
       header.customSort!(a, b, currentSortType === "asc")
     );
-    return items;
+    return itemsCopy;
   }
 
   let isNumberColumn = true;
-  items.forEach((item) => {
+  itemsCopy.forEach((item) => {
     const currentItem = item[sortBy]?.toString();
     if (!currentItem) {
       return;
@@ -80,9 +83,9 @@ export const sortItems = (
 
   // number sort
   if (isNumberColumn) {
-    items.sort((a: TableItem, b: TableItem) => {
-      const aToNumber = tryToConvertToNumber(a[sortBy] as string);
-      const bToNumber = tryToConvertToNumber(b[sortBy] as string);
+    itemsCopy.sort((a: any, b: any) => {
+      const aToNumber = tryToConvertToNumber(a[sortBy]);
+      const bToNumber = tryToConvertToNumber(b[sortBy]);
 
       const aIsNumber = typeof aToNumber === "number" && !isNaN(aToNumber);
       const bIsNumber = typeof bToNumber === "number" && !isNaN(bToNumber);
@@ -99,24 +102,24 @@ export const sortItems = (
         ? bToNumber - aToNumber
         : aToNumber - bToNumber;
     });
-    return items;
+    return itemsCopy;
   }
 
   // alphabetical sort
   if (currentSortType === "desc") {
-    items.sort((a: TableItem, b: TableItem) =>
+    itemsCopy.sort((a: any, b: any) =>
       alphabeticalSort(b[sortBy] as string, a[sortBy] as string)
     );
   } else {
-    items.sort((a: TableItem, b: TableItem) =>
+    itemsCopy.sort((a: any, b: any) =>
       alphabeticalSortInverse(b[sortBy] as string, a[sortBy] as string)
     );
   }
 
-  return [...items];
+  return itemsCopy;
 };
 
-export const tryToConvertToNumber = (item: string) => {
+export const tryToConvertToNumber = (item: any) => {
   if (typeof item === "number") return item;
   if (typeof item === "string") {
     return Number(item.split(NBSP).join(""));

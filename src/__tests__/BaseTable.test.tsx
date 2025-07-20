@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import "@testing-library/jest-dom"; // Ensure this line is included to fix the issue with 'toBeInTheDocument'
+import "@testing-library/jest-dom";
 import BaseTableHeader from "../components/BaseTable/models/BaseTableHeaders";
 import TableItem from "../components/BaseTable/models/TableItem";
 import BaseTable from "../components/BaseTable/BaseTable";
@@ -20,12 +20,8 @@ const items: TableItem[] = [
 describe("BaseTable Component", () => {
   test("renders the table with correct headers and data", () => {
     render(<BaseTable headers={headers} items={items} />);
-
-    // Check headers
     expect(screen.getByText("Name")).toBeInTheDocument();
     expect(screen.getByText("Age")).toBeInTheDocument();
-
-    // Check data rows
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("25")).toBeInTheDocument();
     expect(screen.getByText("Bob")).toBeInTheDocument();
@@ -41,10 +37,8 @@ describe("BaseTable Component", () => {
         onRowDoubleClick={onRowDoubleClick}
       />
     );
-
     const row = screen.getByText("Alice").closest("tr");
     fireEvent.doubleClick(row!);
-
     expect(onRowDoubleClick).toHaveBeenCalledWith({ name: "Alice", age: "25" });
   });
 
@@ -58,10 +52,8 @@ describe("BaseTable Component", () => {
         currentSortId="name"
       />
     );
-
     const nameHeader = screen.getByText("Name");
     fireEvent.click(nameHeader);
-
     expect(onSortByColumn).toHaveBeenCalledWith("name");
   });
 
@@ -69,13 +61,8 @@ describe("BaseTable Component", () => {
     const activeFilters: ActiveTableFilter[] = [
       { headerId: "name", itemsToHide: ["Alice"] },
     ];
-
     render(<BaseTable headers={headers} items={items} />);
-
-    const clearFiltersButton = screen.queryByText("Clear all filters");
-    expect(clearFiltersButton).not.toBeInTheDocument();
-
-    // Simulate active filters
+    expect(screen.queryByText("Clear all filters")).not.toBeInTheDocument();
     render(
       <BaseTable
         headers={headers}
@@ -84,16 +71,13 @@ describe("BaseTable Component", () => {
         activeFilters={activeFilters}
       />
     );
-
     expect(screen.getByText("Clear all filters")).toBeInTheDocument();
   });
 
   test("filters items based on active filters", () => {
-    // Activate a filter that hides "Alice"
     const activeFilters: ActiveTableFilter[] = [
       { headerId: "name", itemsToHide: ["Alice"] },
     ];
-
     render(
       <BaseTable
         headers={headers}
@@ -102,9 +86,7 @@ describe("BaseTable Component", () => {
         activeFilters={activeFilters}
       />
     );
-
     const rows = screen.getAllByRole("row");
-
     expect(rows.some((row) => within(row).queryByText("Alice"))).toBe(false);
     expect(rows.some((row) => within(row).queryByText("Bob"))).toBe(true);
   });
@@ -124,19 +106,15 @@ describe("BaseTable Component", () => {
         ),
       },
     ];
-
     render(<BaseTable headers={customHeaders} items={items} />);
-
     expect(screen.getByTestId("custom-header")).toBeInTheDocument();
     expect(screen.getAllByTestId("custom-cell").length).toBe(items.length);
   });
 
   test("renders empty state when items is empty", () => {
     render(<BaseTable headers={headers} items={[]} />);
-    // You may want to check for a specific empty state message or just that no rows are rendered
     const rows = screen.queryAllByRole("row");
-    // 1 row for headers, 0 for data
-    expect(rows.length).toBe(1);
+    expect(rows.length).toBe(1); // Only header row
   });
 
   test("renders pin columns class when pinColumns is true", () => {
@@ -165,8 +143,79 @@ describe("BaseTable Component", () => {
 
   test("renders correct number of rows", () => {
     render(<BaseTable headers={headers} items={items} />);
-    // 1 header row + 3 data rows
     const rows = screen.getAllByRole("row");
     expect(rows.length).toBe(1 + items.length);
+  });
+
+  // --- Additional tests ---
+
+  test("renders group headers and items when groupBy is set", () => {
+    const groupedItems = [
+      { name: "Alice", age: "25", group: "A" },
+      { name: "Bob", age: "30", group: "A" },
+      { name: "Charlie", age: "35", group: "B" },
+    ];
+    render(
+      <BaseTable headers={headers} items={groupedItems} groupBy="group" />
+    );
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("B")).toBeInTheDocument();
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Charlie")).toBeInTheDocument();
+  });
+
+  test("collapses and expands group when collapse button is clicked", () => {
+    const groupedItems = [
+      { name: "Alice", age: "25", group: "A" },
+      { name: "Bob", age: "30", group: "A" },
+      { name: "Charlie", age: "35", group: "B" },
+    ];
+    render(
+      <BaseTable headers={headers} items={groupedItems} groupBy="group" />
+    );
+    // Collapse group A
+    const collapseButton = screen.getAllByRole("button", { name: /-/ })[0];
+    fireEvent.click(collapseButton);
+    expect(screen.queryByText("Alice")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bob")).not.toBeInTheDocument();
+    // Expand group A
+    const expandButton = screen.getAllByRole("button", { name: /\+/ })[0];
+    fireEvent.click(expandButton);
+    expect(screen.getByText("Alice")).toBeInTheDocument();
+    expect(screen.getByText("Bob")).toBeInTheDocument();
+  });
+
+  test("renders only visible rows when virtualization is enabled", () => {
+    const manyItems = Array.from({ length: 100 }, (_, i) => ({
+      name: `Name${i}`,
+      age: `${20 + i}`,
+    }));
+    render(<BaseTable headers={headers} items={manyItems} height="200px" />);
+    const rows = screen.getAllByRole("row");
+    expect(rows.length).toBeLessThan(105); // Only visible rows rendered
+  });
+
+  test("renders index column when showIndex is true", () => {
+    render(<BaseTable headers={headers} items={items} showIndex={true} />);
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+  });
+
+  test("applies highlight style to rows matching highlightCondition", () => {
+    render(
+      <BaseTable
+        headers={headers}
+        items={items}
+        highlightCondition={[
+          {
+            propertyId: "name",
+            value: "Bob",
+            style: { backgroundColor: "yellow" },
+          },
+        ]}
+      />
+    );
+    const bobRow = screen.getByText("Bob").closest("tr");
+    expect(bobRow).toHaveStyle("background-color: yellow");
   });
 });

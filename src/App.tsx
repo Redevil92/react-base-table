@@ -1,64 +1,130 @@
 import "./App.css";
-
-import BaseTableHeader from "./components/BaseTable/models/BaseTableHeaders";
+import BaseTableHeader, {
+  TableHeaderType,
+} from "./components/BaseTable/models/BaseTableHeaders";
 import BaseTable from "./components/BaseTable/BaseTable";
 import TableItem from "./components/BaseTable/models/TableItem";
 import ActiveTableFilter from "./components/BaseTable/models/ActiveTableFilter";
+import { useState } from "react";
+import { simpleItems } from "./DUMMY_ITEMS";
 
 function App() {
   const headers: BaseTableHeader[] = [
     {
-      id: "name",
-      text: "Full name",
+      id: "",
+      text: "",
       sortable: true,
+      hasFilter: false,
+      width: 50,
+      customRender: (item: TableItem) => (
+        <input
+          type="checkbox"
+          className="form-checkbox h-4 w-4 text-blue-600"
+          checked={true}
+          onChange={() => {}}
+        />
+      ),
+    },
+    {
+      id: "tag",
+      text: "id",
+      sortable: true,
+      hasFilter: true,
+      editOptions: {
+        editable: true,
+        required: true,
+        type: TableHeaderType.STRING,
+        defaultValue: 0,
+      },
+      width: 180,
+    },
+    {
+      id: "fullName",
+      text: "Full Name",
+      sortable: false,
       hasFilter: false,
       children: [
         {
-          id: "fullNameNested",
-          text: "Full name nested",
+          id: "firstName",
+          text: "First Name",
           sortable: true,
           hasFilter: true,
-          children: [
-            { id: "name", text: "Name", sortable: true, hasFilter: true },
-            {
-              id: "lastName",
-              text: "Last name",
-              sortable: true,
-              hasFilter: true,
-            },
-          ],
+          width: 100,
+          editOptions: {
+            editable: true,
+            required: true,
+            type: TableHeaderType.STRING,
+            defaultValue: 0,
+          },
+        },
+        {
+          id: "lastName",
+          text: "Last Name",
+          sortable: true,
+          hasFilter: true,
+          width: 100,
+          editOptions: {
+            editable: true,
+            required: true,
+            type: TableHeaderType.STRING,
+            defaultValue: 0,
+          },
         },
       ],
     },
+    //  { id: "lastName", text: "Name", sortable: true, hasFilter: true },
     {
       id: "age",
-      text: "age",
+      text: "Age",
       sortable: true,
       hasFilter: true,
+      editOptions: {
+        editable: true,
+        required: true,
+        type: TableHeaderType.NUMBER,
+        defaultValue: 0,
+      },
+      width: 80,
     },
   ];
 
-  const items: TableItem[] = [
-    { name: "Alice", lastName: "Test1", age: 25 },
-    { name: "Bob", lastName: "Test2", age: 30 },
-    { name: "Charlie", lastName: "Test3", age: 35 },
-    { name: "Charlie", lastName: "Test4", age: 9.999 },
-    { name: "Charlie", lastName: "Test5", age: 350 },
-    { name: "Charlie", lastName: "Test6", age: 99 },
-  ];
+  const [items, setItems] = useState(simpleItems);
 
-  const activeFilters: ActiveTableFilter[] = [
-    { headerId: "name", itemsToHide: ["Alice"] },
-  ];
+  const activeFilters: ActiveTableFilter[] = [];
+
+  const onCellBlur = (item: any, originalIndex: number) => {
+    const updatedItems = [...items];
+    updatedItems[originalIndex] = item;
+    setItems(updatedItems);
+  };
+
+  const onBulkChange = (
+    newItems: { itemUpdated: any; originalIndex: number }[]
+  ) => {
+    console.log("onBulkChange", newItems);
+    const itemsToUpdate = [...items];
+
+    newItems.forEach(({ itemUpdated, originalIndex }) => {
+      itemsToUpdate[originalIndex] = itemUpdated;
+    });
+
+    setItems(itemsToUpdate);
+  };
 
   return (
     <>
-      <div className="card">
-        HALO
+      <div>
         <BaseTable
+          showIndex
           headers={headers}
           items={items}
           activeFilters={activeFilters}
+          groupBy="group"
+          onChange={onCellBlur}
+          onBulkChange={onBulkChange}
+          // groupByRender={() => (
+          //   <span className="font-semibold text-lg">{item.name}</span>
+          // )}
         ></BaseTable>
       </div>
     </>
