@@ -1,8 +1,8 @@
 // src/components/BaseTable/hooks/useTableGrouping.ts
 import { useCallback, useMemo, useState } from "react";
-import TableItem from "../models/TableItem";
-import ItemWithGroupInfo from "../models/ItemWithGroupInfo";
-import GroupInfo from "../models/GroupInfo";
+import type TableItem from "../models/TableItem";
+import type ItemWithGroupInfo from "../models/ItemWithGroupInfo";
+import type GroupInfo from "../models/GroupInfo";
 
 interface GroupedItems {
   [key: string]: { rowIndex: number; item: TableItem }[];
@@ -21,6 +21,7 @@ interface UseTableGroupingReturn {
   onCollapseGroup: (group: string) => void;
   setCollapsedGroup: (groupNames: string[]) => void;
   isGroupLinked: (groupName: string) => boolean;
+  getMasterGroupNameLinked: (groupName: string) => string | undefined;
 }
 
 export default function useTableGrouping(
@@ -144,10 +145,17 @@ export default function useTableGrouping(
       });
       return [groupName, updatedItems] as [
         string,
-        { rowIndex: number; item: TableItem }[],
+        { rowIndex: number; item: TableItem }[]
       ];
     });
   }, [groupedItems, linkedGroups]);
+
+  const getMasterGroupNameLinked = useMemo(() => {
+    return (groupName: string): string | undefined => {
+      return linkedGroups?.find((group) => group.linked.includes(groupName))
+        ?.master;
+    };
+  }, [linkedGroups]);
 
   const flatGroupedItemsToDisplay = useMemo(() => {
     const result: Array<GroupInfo | ItemWithGroupInfo> = [];
@@ -155,7 +163,15 @@ export default function useTableGrouping(
     groupedItemsEntries.forEach(([groupName, items]) => {
       // Add group header
       const isCollapsed = collapsedGroups?.includes(groupName) ?? false;
-      result.push({ isGroup: true, groupName, isCollapsed });
+      result.push({
+        isGroup: true,
+        groupName,
+        isCollapsed,
+        masterGroupName: getMasterGroupNameLinked(groupName),
+        linkedGroupNames: linkedGroups?.find(
+          (group) => group.master === groupName
+        )?.linked,
+      });
 
       // Add items only if group is not collapsed
       if (!isCollapsed) {
@@ -189,5 +205,6 @@ export default function useTableGrouping(
     onCollapseGroup,
     setCollapsedGroup,
     isGroupLinked,
+    getMasterGroupNameLinked,
   };
 }

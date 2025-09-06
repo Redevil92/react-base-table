@@ -1,16 +1,16 @@
 ﻿import Icon from "@mdi/react";
 import { mdiFilter } from "@mdi/js";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import useClickOutside from "../../hooks/useClickOutside";
 import { FilterTypes } from "../../enum/FilterTypes";
 import BaseButton from "../BaseButton";
-import ActiveTableFilter from "./models/ActiveTableFilter";
+import type ActiveTableFilter from "./models/ActiveTableFilter";
 
 interface TableFilterProps {
   show: boolean;
   currentFilter?: ActiveTableFilter;
-  tableRef?: React.RefObject<HTMLTableElement>;
+  tableRef?: React.RefObject<HTMLTableElement | null>;
   filterName: string;
   headerId: string;
   filterType: FilterTypes;
@@ -83,7 +83,6 @@ function TableFilter(props: Readonly<TableFilterProps>) {
   };
 
   const onItemCheck = (item: string | number) => {
-    console.log(item);
     const index = filteredOutItems.findIndex((i) => i === item);
     let updatedElements = [...filteredOutItems];
     if (index === -1) {

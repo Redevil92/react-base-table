@@ -1,25 +1,31 @@
-﻿import { ReactNode } from "react";
-import TableItem from "./TableItem";
+﻿import { type ReactNode } from "react";
+import type TableItem from "./TableItem";
 
-export enum TableHeaderType {
-  STRING = "string",
-  LIST = "list",
-  NUMBER = "number",
-}
+export const TableHeaderType = {
+  STRING: "string",
+  LIST: "list",
+  NUMBER: "number",
+} as const;
+
+export type TableHeaderType =
+  (typeof TableHeaderType)[keyof typeof TableHeaderType];
 
 export default interface BaseTableHeader {
   id: string;
   text: string;
   hasFilter?: boolean;
-  width?: number; // to implement
-  children?: BaseTableHeader[]; // to implement
+  width?: number;
+  children?: BaseTableHeader[];
   editOptions?: {
     editable?: boolean;
+    isDisabled?: (item: TableItem) => boolean;
+    greyedOutIfNotEditable?: boolean;
     required?: boolean;
     type: TableHeaderType;
     options?: string[];
     defaultValue?: string | number;
-  }; // to implement
+    canAddNewOption?: boolean;
+  };
   sortable?: boolean;
   align?: "left" | "center" | "right";
   customSort?: (a: TableItem, b: TableItem, ascendingOrder: boolean) => number;

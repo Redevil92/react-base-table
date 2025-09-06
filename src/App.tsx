@@ -2,11 +2,11 @@ import "./App.css";
 import BaseTableHeader, {
   TableHeaderType,
 } from "./components/BaseTable/models/BaseTableHeaders";
-import BaseTable from "./components/BaseTable/BaseTable";
 import TableItem from "./components/BaseTable/models/TableItem";
 import ActiveTableFilter from "./components/BaseTable/models/ActiveTableFilter";
 import { useState } from "react";
 import { simpleItems } from "./DUMMY_ITEMS";
+import BaseTableWithContext from "./components/BaseTable/BaseTableWithContext";
 
 function App() {
   const headers: BaseTableHeader[] = [
@@ -114,7 +114,7 @@ function App() {
   return (
     <>
       <div>
-        <BaseTable
+        <BaseTableWithContext
           showIndex
           headers={headers}
           items={items}
@@ -125,7 +125,7 @@ function App() {
           // groupByRender={() => (
           //   <span className="font-semibold text-lg">{item.name}</span>
           // )}
-        ></BaseTable>
+        ></BaseTableWithContext>
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import BaseTableHeader from "./models/BaseTableHeaders";
-import ActiveTableFilter from "./models/ActiveTableFilter";
+import type BaseTableHeader from "./models/BaseTableHeaders";
+import type ActiveTableFilter from "./models/ActiveTableFilter";
 import TableFilter from "./TableFilter";
 
 import { mdiArrowDown, mdiArrowUp, mdiCloseCircle } from "@mdi/js";
@@ -15,7 +15,7 @@ export interface BaseTableHeadersProps {
   activeFilters?: ActiveTableFilter[];
   filterItemsCache: Record<string, (string | number)[]>;
   ascendingOrder?: boolean;
-  tableRef: React.RefObject<HTMLTableElement>;
+  tableRef?: React.RefObject<HTMLTableElement | null>;
   // showIndex?: boolean;
   onResetSort?: () => void;
   onSetFilter?: (headerId: string, itemsToHide: string[] | number[]) => void;
@@ -91,10 +91,16 @@ export default function BaseTable(props: Readonly<BaseTableHeadersProps>) {
               key={header.id + `-${index}`}
               colSpan={colSpan}
               rowSpan={rowSpan}
-              style={{ width: header.width ? `${header.width}px` : "auto" }}
-              className={`${!props.noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""}`}
+              className={`${
+                !props.noBorder
+                  ? "border-solid border border-gray-300! bg-slate-100"
+                  : ""
+              }`}
             >
-              <div className="flex justify-between">
+              <div
+                style={{ width: header.width ? `${header.width}px` : "auto" }}
+                className="flex justify-between"
+              >
                 <div className="flex">
                   {header.customHeader ? (
                     header.customHeader(header)

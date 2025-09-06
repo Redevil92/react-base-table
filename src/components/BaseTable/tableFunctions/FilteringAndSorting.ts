@@ -3,9 +3,9 @@ import {
   alphabeticalSort,
   alphabeticalSortInverse,
 } from "../../../utils/sorting";
-import ActiveTableFilter from "../models/ActiveTableFilter";
-import BaseTableHeader from "../models/BaseTableHeaders";
-import TableItem from "../models/TableItem";
+import type ActiveTableFilter from "../models/ActiveTableFilter";
+import type BaseTableHeader from "../models/BaseTableHeaders";
+import type TableItem from "../models/TableItem";
 
 export const NBSP = "\u00A0";
 

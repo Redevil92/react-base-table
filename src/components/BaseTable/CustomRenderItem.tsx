@@ -1,5 +1,5 @@
-import BaseTableHeader from "./models/BaseTableHeaders";
-import TableItem from "./models/TableItem";
+import type BaseTableHeader from "./models/BaseTableHeaders";
+import type TableItem from "./models/TableItem";
 
 interface CustomRenderItemProps {
   item: TableItem;

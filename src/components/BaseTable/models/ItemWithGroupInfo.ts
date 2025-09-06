@@ -1,5 +1,5 @@
-import GroupInfo from "./GroupInfo";
-import TableItem from "./TableItem";
+import type GroupInfo from "./GroupInfo";
+import type TableItem from "./TableItem";
 
 export default interface ItemWithGroupInfo extends GroupInfo {
   isGroup: false;

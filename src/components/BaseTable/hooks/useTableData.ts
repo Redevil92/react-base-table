@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import useTableFiltering from "./useTableFiltering";
 import useTableSorting from "./useTableSorting";
-import TableItem from "../models/TableItem";
-import BaseTableHeader from "../models/BaseTableHeaders";
-import ActiveTableFilter from "../models/ActiveTableFilter";
+import type TableItem from "../models/TableItem";
+import type BaseTableHeader from "../models/BaseTableHeaders";
+import type ActiveTableFilter from "../models/ActiveTableFilter";
 
 interface UseTableDataReturn {
   // Filtering

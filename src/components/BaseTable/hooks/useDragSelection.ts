@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import CellCoordinate from "../models/CellCordinate";
+import type CellCoordinate from "../models/CellCordinate";
 
 interface UseDragSelectionReturn {
   selectedCell: CellCoordinate | undefined;

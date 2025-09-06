@@ -1,6 +1,6 @@
-import BaseTableHeader from "./models/BaseTableHeaders";
-import TableItem from "./models/TableItem";
-import ActiveTableFilter from "./models/ActiveTableFilter";
+import type BaseTableHeader from "./models/BaseTableHeaders";
+import type TableItem from "./models/TableItem";
+import type ActiveTableFilter from "./models/ActiveTableFilter";
 import TableFilter from "./TableFilter";
 
 import { mdiArrowDown, mdiArrowUp, mdiCloseCircle } from "@mdi/js";
@@ -50,7 +50,9 @@ export default function BaseTable({
   return (
     <>
       <th
-        className={`${!noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""} `}
+        className={`${
+          !noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""
+        } `}
         key={`header-${header.id}`}
       >
         <div className="flex justify-between">

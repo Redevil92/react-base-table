@@ -1,4 +1,4 @@
-import CellCoordinate from "../models/CellCordinate";
+import type CellCoordinate from "../models/CellCordinate";
 
 type ArrowKey = "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
 
@@ -10,14 +10,12 @@ const calculateSelectedCellAndExpandedSelection = (
   rowsCount: number
 ) => {
   e.stopPropagation();
-  console.log("Here", e.key);
 
   let newSelectedCell: CellCoordinate | undefined = selectedCell;
   let newExpandedSelection: CellCoordinate[] = [...expandedSelection];
 
   // Tab navigation
   if (e.key === "Tab") {
-    console.log("Tab");
     let nextRow = selectedCell?.rowIndex ?? 0;
     let nextCol = selectedCell?.columnIndex ?? 0;
 

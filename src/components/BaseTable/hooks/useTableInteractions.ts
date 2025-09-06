@@ -1,8 +1,8 @@
 // hooks/useTableInteractions.ts
 import { useCallback, useState, useRef, useEffect } from "react";
-import BaseTableHeader from "../models/BaseTableHeaders";
-import TableItem from "../models/TableItem";
-import CellCoordinate from "../models/CellCordinate";
+import type BaseTableHeader from "../models/BaseTableHeaders";
+import type TableItem from "../models/TableItem";
+import type CellCoordinate from "../models/CellCordinate";
 import calculateSelectedCellAndExpandedSelection from "../tableFunctions/CellSelection";
 
 interface UseTableInteractionsProps<T extends TableItem> {
@@ -10,7 +10,10 @@ interface UseTableInteractionsProps<T extends TableItem> {
   items: TableItem[];
   groupedItemsEntries?: [string, { rowIndex: number; item: TableItem }[]][];
   onChange?: (itemUpdated: T, originalIndex: number) => void;
-  onBulkChange?: (items: { itemUpdated: T; originalIndex: number }[]) => void;
+  onBulkChange?: (
+    items: { itemUpdated: T; originalIndex: number }[],
+    headerId: string
+  ) => void;
   onRowDoubleClick?: (item: T) => void;
 }
 
@@ -84,6 +87,29 @@ export function useTableInteractions<T extends TableItem>({
     [onChange, getUpdateItemAndIndex]
   );
 
+  const onRightClick = useCallback(
+    (
+      rowIndex: number,
+      columnIndex: number,
+
+      e: React.MouseEvent
+    ) => {
+      e.preventDefault();
+      // if you right click on a cell that is in the expanded selection, we want to keep that selection
+
+      const isInExpandedSelection = expandedSelection.some(
+        (cell) => cell.rowIndex === rowIndex && cell.columnIndex === columnIndex
+      );
+
+      if (!isInExpandedSelection) {
+        // Clear selection and set the right-clicked cell as selected
+        setSelectedCell({ rowIndex, columnIndex });
+        setExpandedSelection([]);
+      }
+    },
+    [expandedSelection]
+  );
+
   // Handle cell enter - when Enter key is pressed after editing
   const onCellEnter = useCallback(
     (
@@ -112,6 +138,8 @@ export function useTableInteractions<T extends TableItem>({
             const cellItem = getItemFromCellCoordinates(cell);
             if (!cellItem) return null;
 
+            console.log("Edit value", editValue);
+
             return {
               itemUpdated: { ...cellItem, [header.id]: editValue },
               originalIndex: items.findIndex(
@@ -122,7 +150,7 @@ export function useTableInteractions<T extends TableItem>({
           .filter(Boolean) as { itemUpdated: T; originalIndex: number }[];
 
         if (onBulkChange && itemsToUpdate.length > 0) {
-          onBulkChange(itemsToUpdate);
+          onBulkChange(itemsToUpdate, header.id);
         }
       } else {
         // Handle single cell edit
@@ -293,6 +321,9 @@ export function useTableInteractions<T extends TableItem>({
     onCellMouseDown,
     onCellMouseEnter,
     onMouseMove,
+
+    // Context menu handler
+    onRightClick,
 
     // Helper functions
     getItemFromCellCoordinates,

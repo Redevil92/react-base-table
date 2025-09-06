@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { filterItems } from "../tableFunctions/FilteringAndSorting";
-import ActiveTableFilter from "../models/ActiveTableFilter";
-import TableItem from "../models/TableItem";
-import BaseTableHeader from "../models/BaseTableHeaders";
+import type ActiveTableFilter from "../models/ActiveTableFilter";
+import type TableItem from "../models/TableItem";
+import type BaseTableHeader from "../models/BaseTableHeaders";
 
 interface UseTableFilteringReturn {
   activeFilters: ActiveTableFilter[];

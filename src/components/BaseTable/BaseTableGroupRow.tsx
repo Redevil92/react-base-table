@@ -1,6 +1,7 @@
-import { ReactNode } from "react";
-import { mdiChevronDown, mdiChevronUp } from "@mdi/js";
+import { mdiChevronDown, mdiChevronUp, mdiLink, mdiLinkLock } from "@mdi/js";
 import BaseButton from "../BaseButton";
+import Icon from "@mdi/react";
+import type { ReactNode } from "react";
 
 interface BaseTableGroupRowProps {
   groupByCustomRender?: (groupBy: string, value: string) => ReactNode;
@@ -8,6 +9,8 @@ interface BaseTableGroupRowProps {
   groupBy: string;
   groupName: string; // This is the reliable identifier for the group
   isCollapsed: boolean;
+  masterGroupName?: string; // Optional prop to indicate if this group is linked
+  linkedGroupNames?: string[];
   onCollapseGroup: (group: string) => void;
 }
 
@@ -20,25 +23,42 @@ export default function BaseTableGroupRow(
         props.groupByCustomRender(props.groupBy, props.groupName)
       ) : (
         <td colSpan={props.colSpan} className="font-semibold">
-          <BaseButton
-            onClick={() => {
-              // We only use groupName for collapsing, not index
-              console.log("++++++Collapse group:", props.groupName);
-              props.onCollapseGroup(props.groupName);
-            }}
-            className="mb-1 h-5 min-h-5 bg-[#DADADA] border-none"
-            iconSize={20}
-            small
-            circle
-            icon={props.isCollapsed ? mdiChevronUp : mdiChevronDown}
-          />
-          {/* <button
-            onClick={() => props.onCollapseGroup(props.groupName)}
-            className="btn btn-xs btn-circle btn-primary mr-2"
-          >
-            {props.isCollapsed ? <span>+</span> : <span>-</span>}
-          </button> */}
-          <span>{props.groupName}</span>
+          <div className="flex align-center items-center">
+            <BaseButton
+              key={props.groupName}
+              id={props.groupName}
+              onClick={() => props.onCollapseGroup(props.groupName)}
+              className="mb-1 h-5 min-h-5 mx-4 bg-[#DADADA] border-none"
+              iconSize={1}
+              small
+              circle
+              icon={props.isCollapsed ? mdiChevronUp : mdiChevronDown}
+            />
+
+            <div className="ml-2">{props.groupName}</div>
+
+            <div className="ml-8">
+              {props.masterGroupName && (
+                <div className="flex  font-normal  text-white bg-[#a0a0a0] rounded-2xl px-3">
+                  <Icon path={mdiLinkLock} color="white" size={0.8} />
+                  <div className="ml-2">
+                    <span className="ml-1">Linked</span>
+                  </div>
+                </div>
+              )}
+              {props.linkedGroupNames && props.linkedGroupNames.length > 0 && (
+                <div className="flex  font-normal  text-white bg-[#6B21A8] rounded-2xl px-3">
+                  <Icon path={mdiLink} color="white" size={0.8} />
+                  <div className="ml-2">
+                    <span className="font-bold">
+                      {props.linkedGroupNames.length}
+                    </span>
+                    <span className="ml-1"> linked groups</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </td>
       )}
     </tr>

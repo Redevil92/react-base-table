@@ -1,7 +1,18 @@
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import CustomRenderItem from "./CustomRenderItem";
-import BaseTableHeader, { TableHeaderType } from "./models/BaseTableHeaders";
-import TableItem from "./models/TableItem";
+import type TableItem from "./models/TableItem";
+import type CommentData from "./models/CommentData";
+import CommentPopup from "./CommentPopup";
+import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
+import type BaseTableHeader from "./models/BaseTableHeaders";
+import { TableHeaderType } from "./models/BaseTableHeaders";
+import ListCell from "./cellImplementation/ListCell";
 
 export interface BaseTableCellProps {
   header: BaseTableHeader;
@@ -11,9 +22,10 @@ export interface BaseTableCellProps {
   isSelected: boolean;
   isInExpandedSelection: boolean;
   noBorder?: boolean;
-  disabled?: boolean;
+  isInLinkedGroup?: boolean;
   style?: CSSProperties;
   contrastRow?: boolean;
+  comments?: CommentData[];
   onClick?: (rowIndex: number, columnIndex: number) => void;
   onKeyDown?: (
     e: React.KeyboardEvent,
@@ -27,7 +39,6 @@ export interface BaseTableCellProps {
   ) => void;
   onBlur?: (
     editValue: string | number | undefined,
-
     item: TableItem,
     header: BaseTableHeader
   ) => void;
@@ -39,25 +50,75 @@ export interface BaseTableCellProps {
   ) => void;
   onMouseDown?: (e: React.MouseEvent<HTMLTableCellElement>) => void;
   onMouseEnter?: (e: React.MouseEvent<HTMLTableCellElement>) => void;
+  onContextMenu?: (
+    rowIndex: number,
+    columnIndex: number,
+    item: TableItem,
+    event: React.MouseEvent<HTMLTableCellElement>
+  ) => void;
+  onSaveComment?: (comment: CommentData, item: TableItem) => void;
+  onDeleteComment?: (comment: CommentData, item: TableItem) => void;
+  onAddOption?: (newOption: string, header: BaseTableHeader) => void;
 }
 
 export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
   const [editValue, setEditValue] = useState(props.item[props.header.id]);
+  const { openCommentCell, setOpenCommentCell } = useCommentPopupContext();
 
   useEffect(() => {
-    // console.log("useEffect called for BaseTableCell");
     setEditValue(props.item[props.header.id]);
   }, [props.item, props.header.id]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    console.log("handleChange called", e.target.value, editValue);
-    setEditValue(e.target.value);
+    const target = e.target;
+    let newValue: string | number | undefined = target.value;
+
+    // Convert based on input element type
+    if (target instanceof HTMLInputElement) {
+      switch (target.type) {
+        case "number":
+          newValue = target.value === "" ? undefined : Number(target.value);
+          // Check for NaN
+          if (typeof newValue === "number" && isNaN(newValue)) {
+            newValue = undefined;
+          }
+          break;
+
+        // case "checkbox":
+        //   newValue = target.checked;
+        //   break;
+
+        case "date":
+          // Keep as string but could convert to Date if needed
+          newValue = target.value;
+          break;
+
+        default:
+          // Text, email, tel, etc. - keep as string
+          newValue = target.value;
+      }
+    } else if (target instanceof HTMLSelectElement) {
+      // Handle select elements - keep as string
+      newValue = target.value;
+    }
+
+    setEditValue(newValue);
   };
 
   const handleBlur = () => {
     props.onBlur?.(editValue, props.item, props.header);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLTableCellElement>) => {
+    if (
+      openCommentCell?.columnIndex !== props.columnIndex ||
+      openCommentCell.rowIndex !== props.rowIndex
+    ) {
+      setOpenCommentCell(undefined); // Close comment popup on cell click
+    }
+    props.onMouseDown?.(e);
   };
 
   const onKeyDownHandler = (e: React.KeyboardEvent) => {
@@ -86,6 +147,13 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
     );
   };
 
+  const isCommentPopupOpen = useMemo(
+    () =>
+      openCommentCell?.columnIndex === props.columnIndex &&
+      openCommentCell.rowIndex === props.rowIndex,
+    [openCommentCell, props.columnIndex, props.rowIndex]
+  );
+
   const inputRef = useRef<HTMLInputElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
   const tdRef = useRef<HTMLTableCellElement>(null);
@@ -93,28 +161,6 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
     width: 0,
     height: 0,
   });
-
-  useEffect(() => {
-    if (!props.isSelected) {
-      return;
-    }
-
-    // Use a small timeout to ensure the input/select is rendered
-    const focusTimer = setTimeout(() => {
-      if (
-        props.header.editOptions?.type === TableHeaderType.LIST &&
-        selectRef.current
-      ) {
-        selectRef.current.focus();
-      } else if (inputRef.current) {
-        inputRef.current.focus();
-      } else if (tdRef.current) {
-        tdRef.current.focus();
-      }
-    }, 0);
-
-    return () => clearTimeout(focusTimer);
-  }, [props.isSelected]);
 
   useEffect(() => {
     if (tdRef.current) {
@@ -135,13 +181,22 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
     background: "transparent",
   };
 
-  const renderCellContent = () => {
-    if (
-      props.isSelected &&
+  const isEditable = useMemo(() => {
+    return (
       props.header.editOptions?.editable &&
-      !props.disabled
-    ) {
-      switch (props.header.editOptions.type) {
+      !props.isInLinkedGroup &&
+      !props.header.editOptions.isDisabled?.(props.item)
+    );
+  }, [
+    props.header.editOptions?.editable,
+    props.isInLinkedGroup,
+    props.header.editOptions?.isDisabled,
+    props.item,
+  ]);
+
+  const renderCellContent = () => {
+    if (isEditable && props.isSelected) {
+      switch (props.header.editOptions!.type) {
         case TableHeaderType.NUMBER:
           return (
             <input
@@ -156,20 +211,18 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
           );
         case TableHeaderType.LIST:
           return (
-            <select
-              ref={selectRef}
-              value={editValue}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              autoFocus
-              style={inputStyle}
-            >
-              {props.header.editOptions.options?.map((opt: string) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+            <ListCell
+              value={props.item[props.header.id] as string}
+              options={props.header.editOptions!.options || []}
+              onSelect={(value) => {
+                setEditValue(value);
+                props.onBlur?.(value, props.item, props.header);
+              }}
+              addOption={(newOption) => {
+                props.onAddOption?.(newOption, props.header);
+              }}
+              hideOptions={isCommentPopupOpen}
+            />
           );
 
         default:
@@ -191,8 +244,43 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
       if (props.header.customRender) {
         return <CustomRenderItem item={props.item} header={props.header} />;
       } else {
-        return <span>{props.item[props.header.id]}</span>;
+        return (
+          <div className="flex justify-between">
+            <span
+              className="  truncate whitespace-nowrap overflow-ellipsis"
+              title={String(props.item[props.header.id])}
+            >
+              {props.item[props.header.id]}
+            </span>
+            {props.header.editOptions?.type === TableHeaderType.LIST && (
+              <div
+                className="ml-1 w-0 h-0"
+                style={{
+                  borderLeft: "4px solid transparent",
+                  borderRight: "4px solid transparent",
+                  borderTop: "4px solid #888",
+                  marginTop: "4px",
+                }}
+                aria-label="dropdown indicator"
+              />
+            )}
+          </div>
+        );
       }
+    }
+  };
+
+  // Popup logic
+  const [isEditingComment, setIsEditingComment] = useState(false);
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLTableCellElement>) => {
+    props.onMouseEnter?.(e);
+  };
+
+  const deleteCommentHandler = (comment: CommentData) => {
+    if (props.onDeleteComment) {
+      props.onDeleteComment(comment, props.item);
+      setOpenCommentCell(undefined);
     }
   };
 
@@ -205,36 +293,95 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
           ? () => props.onClick!(props.rowIndex, props.columnIndex)
           : undefined
       }
-      style={{ ...props.style, textAlign: props.header.align }}
+      style={{
+        ...props.style,
+        textAlign: props.header.align,
+        maxWidth: props.header.width ? `${props.header.width}px` : "none",
+      }}
       key={`item-${props.columnIndex}-${props.rowIndex}`}
-      className={` ${!props.noBorder ? "border-solid border  " : ""} 
-                     
-                      ${props.rowIndex % 2 || !props.contrastRow ? "" : "bg-blue-50/50"} 
-                      ${props.isInExpandedSelection ? "bg-blue-100" : ""} 
-                      ${props.isSelected ? "outline-2  outline-radius outline-blue-500! bg-transparent " : "outline-none"}
-                       ${props.disabled ? "bg-gray-100! " : ""}  
+      className={`relative  ${
+        !props.noBorder ? "border-solid border border-gray-200  " : ""
+      } 
+                      ${
+                        props.rowIndex % 2 || !props.contrastRow
+                          ? ""
+                          : "bg-blue-50/50"
+                      } 
+                      ${props.isInExpandedSelection ? "bg-blue-100/50" : ""} 
+                      ${
+                        props.isSelected
+                          ? "outline-2  outline-radius outline-blue-500! bg-transparent "
+                          : "outline-none"
+                      }
+                       ${
+                         props.isInLinkedGroup ||
+                         (!isEditable &&
+                           props.header.editOptions?.greyedOutIfNotEditable)
+                           ? "bg-gray-200/50! "
+                           : ""
+                       }    
                       `}
       onKeyDown={onKeyDownHandler}
-      onMouseDown={props.onMouseDown}
-      onMouseEnter={props.onMouseEnter}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={handleMouseEnter}
+      // onMouseLeave={handleMouseLeave}
+      onContextMenu={
+        props.onContextMenu
+          ? (e) => {
+              props.onContextMenu!(
+                props.rowIndex,
+                props.columnIndex,
+                props.item,
+                e
+              );
+            }
+          : undefined
+      }
     >
+      {props.comments && props.comments.length > 0 && (
+        <div
+          onClick={() =>
+            isCommentPopupOpen
+              ? setOpenCommentCell(undefined)
+              : setOpenCommentCell({
+                  rowIndex: props.rowIndex,
+                  columnIndex: props.columnIndex,
+                })
+          }
+          className="absolute top-0 right-0 "
+          style={{
+            width: 0,
+            height: 0,
+            borderTop: "10px solid var(--comment-color)", // Amber-400 or any color you want
+            borderLeft: "10px solid transparent",
+          }}
+        ></div>
+      )}
+
       {renderCellContent()}
-      {props.columnIndex === 0 && <>{props.rowIndex}</>}
+
+      {isCommentPopupOpen && (
+        <div className="absolute z-2000 w-[220px] mr-[-220px] bg-white border-2 border-[var(--comment-color)] rounded shadow-lg p-2 px-3 top-0 right-0">
+          <CommentPopup
+            comment={
+              props.comments?.[0] || {
+                text: "",
+                propertyId: props.header.id,
+                value: props.item[props.header.id],
+                date: new Date(),
+              }
+            }
+            columnId={props.header.id}
+            isNewComment={props.comments?.length === 0}
+            saveComment={(comment) => {
+              props.onSaveComment?.(comment, props.item);
+            }}
+            deleteComment={(comment) => deleteCommentHandler(comment)}
+            setIsEditing={setIsEditingComment}
+            isEditing={isEditingComment || props.comments?.length === 0}
+          ></CommentPopup>
+        </div>
+      )}
     </td>
   );
 }
-
-// export default memo(BaseTableCell, (prevProps, nextProps) => {
-//   // Only re-render when these specific props change
-//   return (
-//     prevProps.isSelected === nextProps.isSelected &&
-//     prevProps.isInExpandedSelection === nextProps.isInExpandedSelection &&
-//     prevProps.disabled === nextProps.disabled &&
-//     prevProps.item[prevProps.header.id] ===
-//       nextProps.item[nextProps.header.id] &&
-//     prevProps.rowIndex === nextProps.rowIndex &&
-//     prevProps.columnIndex === nextProps.columnIndex &&
-//     prevProps.noBorder === nextProps.noBorder &&
-//     prevProps.contrastRow === nextProps.contrastRow
-//   );
-// });

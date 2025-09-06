@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { sortItems } from "../tableFunctions/FilteringAndSorting";
-import BaseTableHeader from "../models/BaseTableHeaders";
-import TableItem from "../models/TableItem";
+import type BaseTableHeader from "../models/BaseTableHeaders";
+import type TableItem from "../models/TableItem";
 
 interface UseTableSortingReturn {
   currentSortId: string | undefined;

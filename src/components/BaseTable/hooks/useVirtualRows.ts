@@ -1,7 +1,7 @@
 import { notUndefined, useVirtualizer } from "@tanstack/react-virtual";
 import type { MutableRefObject } from "react";
 
-const CELL_HEIGHT = 20;
+const CELL_HEIGHT = 33;
 
 const OVERSCAN = 6;
 
