@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import BaseButton from "../../BaseButton";
-import { mdiArrowRight, mdiCancel, mdiClose, mdiCross, mdiPlus } from "@mdi/js";
+import { mdiArrowRight, mdiClose, mdiPlus } from "@mdi/js";
 
 interface ListCellProps {
   // Define your props here

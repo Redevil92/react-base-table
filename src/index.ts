@@ -2,7 +2,7 @@ import "./output.css";
 
 // export { default as BaseTable } from "./components/BaseTable/BaseTable";
 
-export { default as BaseTable } from "./components/BaseTable/BaseTable";
+export { default as BaseTable } from "./components/BaseTable/BaseTableWithContext";
 
 import ActiveTableFilter from "./components/BaseTable/models/ActiveTableFilter";
 export type { ActiveTableFilter };

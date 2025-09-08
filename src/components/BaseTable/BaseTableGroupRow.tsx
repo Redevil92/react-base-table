@@ -26,7 +26,6 @@ export default function BaseTableGroupRow(
           <div className="flex align-center items-center">
             <BaseButton
               key={props.groupName}
-              id={props.groupName}
               onClick={() => props.onCollapseGroup(props.groupName)}
               className="mb-1 h-5 min-h-5 mx-4 bg-[#DADADA] border-none"
               iconSize={1}

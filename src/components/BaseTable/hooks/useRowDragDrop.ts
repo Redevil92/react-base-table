@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import type TableItem from "../models/TableItem";
 
 interface UseRowDragDropProps {
@@ -17,6 +17,7 @@ export const useRowDragDrop = ({
   onRowsReordered,
   groupBy,
 }: UseRowDragDropProps) => {
+  console.log(items);
   const [draggedRowIndex, setDraggedRowIndex] = useState<number | null>(null);
   const [draggedItem, setDraggedItem] = useState<TableItem | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);

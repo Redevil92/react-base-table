@@ -218,7 +218,6 @@ export default function BaseTable<T extends TableItem>(
   const {
     draggedRowIndex,
     dropTargetIndex,
-    isDraggingRow,
     handleDragEnd,
     handleRowDragStart,
     handleDrop,
@@ -449,9 +448,9 @@ export default function BaseTable<T extends TableItem>(
       position: "relative" as "relative",
     };
 
-    const rowComments = [...comments].filter(
-      (comment) => comment.columnId === undefined
-    );
+    // const rowComments = [...comments].filter(
+    //   (comment) => comment.columnId === undefined
+    // );
 
     // const dropIndicator = dropTargetIndex === index && (
     //   <div
@@ -557,6 +556,7 @@ export default function BaseTable<T extends TableItem>(
         iconColor: "var(--comment-color)",
         text: `${comments.length > 0 ? "Edit" : "Add"} a comment`,
         onClick: (item: TableItem, coordinates: CellCoordinate) => {
+          console.log(item);
           setOpenCommentCell({
             rowIndex: coordinates.rowIndex,
             columnIndex: coordinates.columnIndex,
@@ -594,7 +594,9 @@ export default function BaseTable<T extends TableItem>(
             )}
           </>
         ),
-        onClick: (item: TableItem, coordinates: CellCoordinate) => {},
+        onClick: (item: TableItem, coordinates: CellCoordinate) => {
+          console.log(item, coordinates);
+        },
       },
     ];
   };
@@ -637,6 +639,7 @@ export default function BaseTable<T extends TableItem>(
           // scrollbarWidth: "thin",
         }}
       >
+        <div>TEST222</div>
         <table
           ref={tableRef}
           onMouseMove={onMouseMove}

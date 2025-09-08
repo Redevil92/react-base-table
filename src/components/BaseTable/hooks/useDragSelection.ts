@@ -57,6 +57,7 @@ export default function useDragSelection(
       rowIndex: number,
       columnIndex: number
     ) => {
+      console.log(e);
       //e.preventDefault();
 
       mouseDownRef.current = true;
@@ -73,6 +74,7 @@ export default function useDragSelection(
       rowIndex: number,
       columnIndex: number
     ) => {
+      console.log(e);
       //e.stopPropagation();
       if (!isDragging || !dragStartCell) return;
 

@@ -60,9 +60,9 @@ const TableRow: React.FC<TableRowProps> = memo((props) => {
       {}
     );
 
-  const rowComments = [...comments].filter(
-    (comment) => comment.columnId === undefined
-  );
+  // const rowComments = [...comments].filter(
+  //   (comment) => comment.columnId === undefined
+  // );
 
   return (
     <tr

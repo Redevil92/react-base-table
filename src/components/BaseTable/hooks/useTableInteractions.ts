@@ -233,9 +233,8 @@ export function useTableInteractions<T extends TableItem>({
       columnIndex: number
     ) => {
       //e.preventDefault();
-
+      console.log(e);
       mouseDownRef.current = true;
-
       const startCell = { rowIndex, columnIndex };
 
       setDragStartCell(startCell);

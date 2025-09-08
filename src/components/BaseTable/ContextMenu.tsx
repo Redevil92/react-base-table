@@ -1,6 +1,5 @@
-import { type Context, Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type TableItem from "./models/TableItem";
-import { mdiCommentPlus } from "@mdi/js";
 import Icon from "@mdi/react";
 import type ContextMenuAction from "./models/ContextMenuAction";
 
@@ -71,7 +70,7 @@ export default function ContextMenu(props: ContextMenuProps) {
 
   return (
     <div ref={menuRef} style={{ ...menuStyle, left: pos.left, top: pos.top }}>
-      <ul className="menu menu-sm p-0.5 bg-base-200 rounded-box min-w-55 max-w-xs w-full">
+      <ul className="menu menu-sm p-0.5  bg-[#f44333] rounded-box min-w-55 max-w-xs w-full">
         {props.actions.map((action, index) => (
           <Fragment key={index}>
             {action.customRender ? (

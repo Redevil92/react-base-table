@@ -2,7 +2,6 @@ import "./App.css";
 import BaseTableHeader, {
   TableHeaderType,
 } from "./components/BaseTable/models/BaseTableHeaders";
-import TableItem from "./components/BaseTable/models/TableItem";
 import ActiveTableFilter from "./components/BaseTable/models/ActiveTableFilter";
 import { useState } from "react";
 import { simpleItems } from "./DUMMY_ITEMS";
@@ -16,7 +15,7 @@ function App() {
       sortable: true,
       hasFilter: false,
       width: 50,
-      customRender: (item: TableItem) => (
+      customRender: () => (
         <input
           type="checkbox"
           className="form-checkbox h-4 w-4 text-blue-600"
