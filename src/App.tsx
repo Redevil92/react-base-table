@@ -6,6 +6,7 @@ import ActiveTableFilter from "./components/BaseTable/models/ActiveTableFilter";
 import { useState } from "react";
 import { simpleItems } from "./DUMMY_ITEMS";
 import BaseTableWithContext from "./components/BaseTable/BaseTableWithContext";
+import TableItem from "./components/BaseTable/models/TableItem";
 
 function App() {
   const headers: BaseTableHeader[] = [
@@ -91,20 +92,27 @@ function App() {
 
   const activeFilters: ActiveTableFilter[] = [];
 
-  const onCellBlur = (item: any, originalIndex: number) => {
+  const onCellBlur = (item: TableItem, originalIndex: number) => {
     const updatedItems = [...items];
-    updatedItems[originalIndex] = item;
+    // Ensure the item has all required properties
+    updatedItems[originalIndex] = {
+      ...updatedItems[originalIndex],
+      ...item,
+    };
     setItems(updatedItems);
   };
 
   const onBulkChange = (
-    newItems: { itemUpdated: any; originalIndex: number }[]
+    newItems: { itemUpdated: TableItem; originalIndex: number }[]
   ) => {
     console.log("onBulkChange", newItems);
     const itemsToUpdate = [...items];
 
     newItems.forEach(({ itemUpdated, originalIndex }) => {
-      itemsToUpdate[originalIndex] = itemUpdated;
+      itemsToUpdate[originalIndex] = {
+        ...itemsToUpdate[originalIndex],
+        ...itemUpdated,
+      };
     });
 
     setItems(itemsToUpdate);

@@ -37,6 +37,7 @@ import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
 import { useRowDragDrop } from "./hooks/useRowDragDrop";
 import Icon from "@mdi/react";
 import ColorPicker from "../ColorPicker";
+import "../../index.css";
 
 export interface BaseTableProps<T> {
   height?: string;
