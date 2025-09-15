@@ -446,7 +446,7 @@ export default function BaseTable<T extends TableItem>(
       opacity: draggedRowIndex === index ? 0.5 : 1,
       backgroundColor:
         dropTargetIndex === index ? "rgba(59, 130, 246, 0.1)" : undefined,
-      position: "relative" as "relative",
+      position: "relative" as const,
     };
 
     // const rowComments = [...comments].filter(
