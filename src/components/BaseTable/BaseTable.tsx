@@ -37,7 +37,7 @@ import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
 import { useRowDragDrop } from "./hooks/useRowDragDrop";
 import Icon from "@mdi/react";
 import ColorPicker from "../ColorPicker";
-import "../../index.css";
+import "../../index.css"; // Necessary here in order to create the CSS variable
 
 export interface BaseTableProps<T> {
   height?: string;
