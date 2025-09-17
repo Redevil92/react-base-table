@@ -24,13 +24,13 @@ A simple, customizable, and extensible React table component with support for so
 Install the package via npm or yarn:
 
 ```bash
-npm install @redevilkz/react-base-table
+npm install react-base-data-table
 ```
 
 or
 
 ```bash
-yarn add @redevilkz/react-base-table
+yarn add react-base-data-table
 ```
 
 ---
@@ -40,8 +40,8 @@ yarn add @redevilkz/react-base-table
 Import the `BaseTable` component and its CSS:
 
 ```javascript
-import { BaseTable } from "@redevilkz/react-base-table";
-import "@redevilkz/react-base-table/style.css";
+import { BaseTable } from "react-base-data-table";
+import "react-base-data-table/style.css";
 ```
 
 ### Basic Example
