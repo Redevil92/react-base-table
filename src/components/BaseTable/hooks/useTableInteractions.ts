@@ -9,7 +9,11 @@ interface UseTableInteractionsProps<T extends TableItem> {
   headers: BaseTableHeader[];
   items: TableItem[];
   groupedItemsEntries?: [string, { rowIndex: number; item: TableItem }[]][];
-  onChange?: (itemUpdated: T, originalIndex: number) => void;
+  onChange?: (
+    itemUpdated: T,
+    originalIndex: number,
+    fromArrayIndex?: number
+  ) => void;
   onBulkChange?: (
     items: { itemUpdated: T; originalIndex: number }[],
     headerId: string
@@ -57,13 +61,26 @@ export function useTableInteractions<T extends TableItem>({
     (
       editValue: string | number | undefined,
       item: TableItem,
-      header: BaseTableHeader
+      header: BaseTableHeader,
+      fromArrayData?: { index: number }
     ) => {
       const originalIndex = items.findIndex(
         (originalItem) => originalItem === item
       );
-      const itemUpdated = { ...item, [header.id]: editValue };
-      return { itemUpdated: itemUpdated as T, originalIndex };
+      let itemUpdated: T;
+
+      if (fromArrayData) {
+        const array = item[header.fromArray!] as any[];
+        array[fromArrayData.index] = {
+          ...array[fromArrayData.index],
+          [header.id]: editValue,
+        };
+        itemUpdated = { ...item, [header.fromArray!]: array } as T;
+      } else {
+        itemUpdated = { ...item, [header.id]: editValue } as T;
+      }
+
+      return { itemUpdated: itemUpdated, originalIndex };
     },
     [items]
   );
@@ -73,15 +90,25 @@ export function useTableInteractions<T extends TableItem>({
     (
       editValue: string | number | undefined,
       item: TableItem,
-      header: BaseTableHeader
+      header: BaseTableHeader,
+      cellCoordinate: CellCoordinate
     ) => {
       const { itemUpdated, originalIndex } = getUpdateItemAndIndex(
         editValue,
         item,
-        header
+        header,
+        cellCoordinate.fromArrayData
       );
       if (onChange) {
-        onChange(itemUpdated, originalIndex);
+        const fromArrayIndex = cellCoordinate.fromArrayData?.index;
+        // trigger on change only if value actually changed
+        const hasChanged =
+          fromArrayIndex === undefined
+            ? item[header.id] !== editValue
+            : (item[header.fromArray!] as any[])[fromArrayIndex] !== editValue;
+        if (hasChanged) {
+          onChange(itemUpdated, originalIndex, fromArrayIndex);
+        }
       }
     },
     [onChange, getUpdateItemAndIndex]
@@ -115,7 +142,8 @@ export function useTableInteractions<T extends TableItem>({
     (
       editValue: string | number | undefined,
       item: TableItem,
-      header: BaseTableHeader
+      header: BaseTableHeader,
+      cellCoordinate: CellCoordinate
     ) => {
       let expandedSelectionAndSelected = [...expandedSelection];
 
@@ -160,7 +188,16 @@ export function useTableInteractions<T extends TableItem>({
           header
         );
         if (onChange) {
-          onChange(itemUpdated, originalIndex);
+          const fromArrayIndex = cellCoordinate.fromArrayData?.index;
+          // trigger on change only if value actually changed
+          const hasChanged =
+            fromArrayIndex === undefined
+              ? item[header.id] !== editValue
+              : (item[header.fromArray!] as any[])[fromArrayIndex] !==
+                editValue;
+          if (hasChanged) {
+            onChange(itemUpdated, originalIndex, fromArrayIndex);
+          }
         }
       }
     },
@@ -177,12 +214,14 @@ export function useTableInteractions<T extends TableItem>({
 
   // Handle cell click
   const onCellClick = useCallback(
-    (rowIndex: number, columnIndex: number) => {
+    (cellCoordinate: CellCoordinate) => {
       if (
-        selectedCell?.rowIndex !== rowIndex ||
-        selectedCell?.columnIndex !== columnIndex
+        selectedCell?.rowIndex !== cellCoordinate.rowIndex ||
+        selectedCell?.columnIndex !== cellCoordinate.columnIndex ||
+        selectedCell?.fromArrayData?.index !==
+          cellCoordinate.fromArrayData?.index
       ) {
-        setSelectedCell({ rowIndex, columnIndex });
+        setSelectedCell(cellCoordinate);
         setExpandedSelection([]);
       }
     },
@@ -228,13 +267,14 @@ export function useTableInteractions<T extends TableItem>({
   // Handle cell mouse down
   const onCellMouseDown = useCallback(
     (
-      e: React.MouseEvent<HTMLTableCellElement>,
+      _: React.MouseEvent<HTMLTableCellElement>,
       rowIndex: number,
       columnIndex: number
     ) => {
       //e.preventDefault();
-      console.log(e);
+
       mouseDownRef.current = true;
+
       const startCell = { rowIndex, columnIndex };
 
       setDragStartCell(startCell);
@@ -328,3 +368,4 @@ export function useTableInteractions<T extends TableItem>({
     getItemFromCellCoordinates,
   };
 }
+

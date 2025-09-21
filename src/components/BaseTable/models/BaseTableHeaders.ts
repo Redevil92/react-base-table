@@ -18,7 +18,10 @@ export default interface BaseTableHeader {
   children?: BaseTableHeader[];
   editOptions?: {
     editable?: boolean;
-    isDisabled?: (item: TableItem) => boolean;
+    isDisabled?: (
+      item: TableItem,
+      fromArrayData?: { index: number }
+    ) => boolean;
     greyedOutIfNotEditable?: boolean;
     required?: boolean;
     type: TableHeaderType;
@@ -26,9 +29,15 @@ export default interface BaseTableHeader {
     defaultValue?: string | number;
     canAddNewOption?: boolean;
   };
+  fromArray?: string;
   sortable?: boolean;
   align?: "left" | "center" | "right";
   customSort?: (a: TableItem, b: TableItem, ascendingOrder: boolean) => number;
   customHeader?: (header: BaseTableHeader) => ReactNode;
-  customRender?: (item: TableItem, header: BaseTableHeader) => ReactNode;
+  customRender?: (
+    item: TableItem,
+    header: BaseTableHeader,
+    fromArrayData?: { index: number }
+  ) => ReactNode;
 }
+

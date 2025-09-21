@@ -54,7 +54,7 @@ function CommentPopup(props: CommentPopupProps) {
   };
 
   const initials = useMemo(() => {
-    const nameParts = (comment.author || "Unknown").split(" ");
+    const nameParts = (comment.author || username || "Unknown").split(" ");
     return nameParts
       .map((part) => part.charAt(0).toUpperCase())
       .join("")

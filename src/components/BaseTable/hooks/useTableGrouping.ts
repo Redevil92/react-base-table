@@ -46,8 +46,6 @@ export default function useTableGrouping(
   // Group items by the groupBy property
   const groupedItems = useMemo(() => {
     if (!groupBy) {
-      // If no grouping is requested, return items in a format that mimics grouped structure
-      // but with a single empty group key
       const ungroupedItems = filteredItems.map((item, index) => ({
         rowIndex: index,
         item,

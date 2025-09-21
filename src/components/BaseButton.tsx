@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 interface BaseButtonInterface {
   text?: string;
+  id?: string;
   onClick: () => void;
   ghost?: boolean;
   small?: boolean;
@@ -27,10 +28,11 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
 
   const button = (
     <button
+      id={props.id}
       className={`btn ${props.className ?? ""} ${props.ghost ? " btn-ghost" : ""} ${
         props.small ? "btn-xs" : "btn-sm"
       } content-center ${props.circle ? "btn-circle" : ""}`}
-      onClick={() => props.onClick()}
+      onClick={props.onClick}
       disabled={props.disabled === true}
     >
       {props.icon && (

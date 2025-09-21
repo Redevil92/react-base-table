@@ -1,7 +1,7 @@
 import { notUndefined, useVirtualizer } from "@tanstack/react-virtual";
 import type { MutableRefObject } from "react";
 
-const CELL_HEIGHT = 33;
+const CELL_HEIGHT = 20;
 
 const OVERSCAN = 6;
 
@@ -32,3 +32,4 @@ export const useVirtualRows = ({ rowsCount, scrollRef }: Props) => {
 
   return { virtualRows, before, after };
 };
+

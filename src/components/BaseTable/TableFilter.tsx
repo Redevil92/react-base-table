@@ -126,7 +126,7 @@ function TableFilter(props: Readonly<TableFilterProps>) {
       {props.show ? (
         <div
           ref={filterRef}
-          className={`absolute mt-1 bg-white shadow-xs p-3 w-60 z-10 rounded-md font-normal border border-border-color-light ${
+          className={`absolute mt-1 bg-white shadow-xs p-3 w-60 z- rounded-md font-normal border border-border-color-light ${
             showRight ? "right-0" : ""
           }`}
         >

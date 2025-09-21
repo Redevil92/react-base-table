@@ -4,10 +4,19 @@ import type TableItem from "./models/TableItem";
 interface CustomRenderItemProps {
   item: TableItem;
   header: BaseTableHeader;
+  fromArrayData?: { index: number };
 }
 
 export default function CustomRenderItem(
   props: Readonly<CustomRenderItemProps>
 ) {
-  return <>{props.header.customRender!(props.item, props.header)}</>;
+  return (
+    <>
+      {props.header.customRender!(
+        props.item,
+        props.header,
+        props.fromArrayData
+      )}
+    </>
+  );
 }

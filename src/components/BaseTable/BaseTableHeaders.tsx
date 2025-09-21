@@ -80,7 +80,7 @@ export default function BaseTable(props: Readonly<BaseTableHeadersProps>) {
   ): React.ReactNode {
     if (headers.length === 0) return null;
     return (
-      <tr key={`header-row-${currentLevel}`}>
+      <tr key={`header-row-${currentLevel}`} className="z-100">
         {headers.map((header, index) => {
           const colSpan = getColSpan(header);
           const hasChildren = header.children && header.children.length > 0;

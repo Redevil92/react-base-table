@@ -113,7 +113,22 @@ const ColorPicker = ({
         >
           {/* Overlay to close */}
           <div className="fixed inset-0" onClick={handleClose} />
-          <TwitterPicker color={color} onChange={handleChange} />
+          <TwitterPicker
+            color={color}
+            colors={[
+              "#ffc094",
+              "#fee7a8",
+
+              "#b5f1db",
+              "#d0ecfe",
+              "#9ed5f4",
+              "#d2d9df",
+              "#f8b2c4",
+              "#F78DA7",
+              "#d89ef9",
+            ]}
+            onChange={handleChange}
+          />
         </div>
       )}
     </div>

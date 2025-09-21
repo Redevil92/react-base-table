@@ -13,6 +13,7 @@ import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
 import type BaseTableHeader from "./models/BaseTableHeaders";
 import { TableHeaderType } from "./models/BaseTableHeaders";
 import ListCell from "./cellImplementation/ListCell";
+import type CellCoordinate from "./models/CellCordinate";
 
 export interface BaseTableCellProps {
   header: BaseTableHeader;
@@ -26,7 +27,12 @@ export interface BaseTableCellProps {
   style?: CSSProperties;
   contrastRow?: boolean;
   comments?: CommentData[];
-  onClick?: (rowIndex: number, columnIndex: number) => void;
+  rowSpan?: number;
+  fromArrayData?: {
+    fromArray: string;
+    index: number;
+  };
+  onClick?: (cellCoordinate: CellCoordinate) => void;
   onKeyDown?: (
     e: React.KeyboardEvent,
     rowIndex: number,
@@ -35,16 +41,19 @@ export interface BaseTableCellProps {
   onEnter?: (
     editValue: string | number | undefined,
     item: TableItem,
-    header: BaseTableHeader
+    header: BaseTableHeader,
+    cellCoordinate: CellCoordinate
   ) => void;
   onBlur?: (
     editValue: string | number | undefined,
     item: TableItem,
-    header: BaseTableHeader
+    header: BaseTableHeader,
+    cellCoordinate: CellCoordinate
   ) => void;
   onChange?: (
     editValue: string | number | undefined,
-    rowIndex: number,
+    //rowIndex: number,
+    cellCoordinate: CellCoordinate,
     item: TableItem,
     header: BaseTableHeader
   ) => void;
@@ -62,11 +71,25 @@ export interface BaseTableCellProps {
 }
 
 export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
-  const [editValue, setEditValue] = useState(props.item[props.header.id]);
+  const getDefaultValue = () => {
+    if (props.fromArrayData) {
+      return (props.item[props.header.fromArray!] as any[])[
+        props.fromArrayData.index
+      ][props.header.id] as string | number | undefined;
+    }
+
+    return props.item[props.header.id] as string | number | undefined;
+  };
+
+  const [editValue, setEditValue] = useState<string | number | undefined>(
+    () => {
+      return getDefaultValue();
+    }
+  );
   const { openCommentCell, setOpenCommentCell } = useCommentPopupContext();
 
   useEffect(() => {
-    setEditValue(props.item[props.header.id]);
+    setEditValue(getDefaultValue());
   }, [props.item, props.header.id]);
 
   const handleChange = (
@@ -108,7 +131,11 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
   };
 
   const handleBlur = () => {
-    props.onBlur?.(editValue, props.item, props.header);
+    props.onBlur?.(editValue, props.item, props.header, {
+      rowIndex: props.rowIndex,
+      columnIndex: props.columnIndex,
+      fromArrayData: props.fromArrayData,
+    });
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLTableCellElement>) => {
@@ -123,9 +150,13 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
 
   const onKeyDownHandler = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      props.onEnter?.(editValue, props.item, props.header);
+      props.onEnter?.(editValue, props.item, props.header, {
+        rowIndex: props.rowIndex,
+        columnIndex: props.columnIndex,
+        fromArrayData: props.fromArrayData,
+      });
     } else if (e.key === "Escape") {
-      setEditValue(props.item[props.header.id]); // Reset to original value on Escape
+      setEditValue(getDefaultValue()); // Reset to original value on Escape
     } else if (
       isInputFocused() &&
       ["ArrowRight", "ArrowLeft"].includes(e.key) &&
@@ -157,24 +188,24 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
   const inputRef = useRef<HTMLInputElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
   const tdRef = useRef<HTMLTableCellElement>(null);
-  const [cellSize, setCellSize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
+  // const [cellSize, setCellSize] = useState<{ width: number; height: number }>({
+  //   width: 0,
+  //   height: 0,
+  // });
 
-  useEffect(() => {
-    if (tdRef.current) {
-      setCellSize({
-        width: tdRef.current.offsetWidth,
-        height: tdRef.current.offsetHeight,
-      });
-    }
-  }, [props.isSelected, editValue]);
+  // useEffect(() => {
+  //   if (tdRef.current) {
+  //     setCellSize({
+  //       width: tdRef.current.offsetWidth,
+  //       height: tdRef.current.offsetHeight,
+  //     });
+  //   }
+  // }, [props.isSelected, editValue]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%", // 8px padding
 
-    height: cellSize.height ? `${cellSize.height - 10}px` : "calc(100% - 8px)", // 8px padding
+    // height: cellSize.height ? `${cellSize.height - 10}px` : "calc(100% - 8px)", // 8px padding
     // boxSizing: "border-box" as React.CSSProperties["boxSizing"],
     outline: "none",
     border: "none",
@@ -185,7 +216,7 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
     return (
       props.header.editOptions?.editable &&
       !props.isInLinkedGroup &&
-      !props.header.editOptions.isDisabled?.(props.item)
+      !props.header.editOptions.isDisabled?.(props.item, props.fromArrayData)
     );
   }, [
     props.header.editOptions?.editable,
@@ -212,11 +243,15 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
         case TableHeaderType.LIST:
           return (
             <ListCell
-              value={props.item[props.header.id] as string}
+              value={editValue as string}
               options={props.header.editOptions!.options || []}
               onSelect={(value) => {
                 setEditValue(value);
-                props.onBlur?.(value, props.item, props.header);
+                props.onBlur?.(value, props.item, props.header, {
+                  rowIndex: props.rowIndex,
+                  columnIndex: props.columnIndex,
+                  fromArrayData: props.fromArrayData,
+                });
               }}
               addOption={(newOption) => {
                 props.onAddOption?.(newOption, props.header);
@@ -242,7 +277,13 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
       }
     } else {
       if (props.header.customRender) {
-        return <CustomRenderItem item={props.item} header={props.header} />;
+        return (
+          <CustomRenderItem
+            item={props.item}
+            header={props.header}
+            fromArrayData={props.fromArrayData}
+          />
+        );
       } else {
         return (
           <div className="flex justify-between">
@@ -250,7 +291,20 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
               className="  truncate whitespace-nowrap overflow-ellipsis"
               title={String(props.item[props.header.id])}
             >
-              {props.item[props.header.id]}
+              {props.fromArrayData ? (
+                <>
+                  {props.item[props.header.fromArray!] &&
+                  (props.item[props.header.fromArray!] as any[])[
+                    props.fromArrayData.index
+                  ]
+                    ? (props.item[props.header.fromArray!] as any[])[
+                        props.fromArrayData.index
+                      ][props.header.id]
+                    : ""}
+                </>
+              ) : (
+                <> {props.item[props.header.id]}</>
+              )}
             </span>
             {props.header.editOptions?.type === TableHeaderType.LIST && (
               <div
@@ -290,14 +344,21 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
       tabIndex={0}
       onClick={
         props.onClick
-          ? () => props.onClick!(props.rowIndex, props.columnIndex)
+          ? () =>
+              props.onClick!({
+                rowIndex: props.rowIndex,
+                columnIndex: props.columnIndex,
+                fromArrayData: props.fromArrayData,
+              })
           : undefined
       }
       style={{
         ...props.style,
         textAlign: props.header.align,
+        alignContent: "start",
         maxWidth: props.header.width ? `${props.header.width}px` : "none",
       }}
+      rowSpan={props.rowSpan}
       key={`item-${props.columnIndex}-${props.rowIndex}`}
       className={`relative  ${
         !props.noBorder ? "border-solid border border-gray-200  " : ""
@@ -385,3 +446,4 @@ export default function BaseTableCell(props: Readonly<BaseTableCellProps>) {
     </td>
   );
 }
+

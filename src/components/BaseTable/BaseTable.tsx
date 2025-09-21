@@ -34,10 +34,9 @@ import type CommentData from "./models/CommentData";
 import type CellCoordinate from "./models/CellCordinate";
 
 import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
+import ColorPicker from "../ColorPicker";
 import { useRowDragDrop } from "./hooks/useRowDragDrop";
 import Icon from "@mdi/react";
-import ColorPicker from "../ColorPicker";
-import "../../index.css"; // Necessary here in order to create the CSS variable
 
 export interface BaseTableProps<T> {
   height?: string;
@@ -64,11 +63,16 @@ export interface BaseTableProps<T> {
   ) => void;
   onRemoveHighlightCondition?: (
     highlightCondition: HighlightCondition,
-    cssPropertyToRemove: keyof CSSProperties
+    cssPropertyToRemove: keyof CSSProperties,
+    item: TableItem
   ) => void;
   onSaveComment?: (comment: CommentData, item: TableItem) => void;
   onDeleteComment?: (comment: CommentData, item: TableItem) => void;
-  onChange?: (itemUpdated: T, originalIndex: number) => void;
+  onChange?: (
+    itemUpdated: T,
+    originalIndex: number,
+    fromArrayIndex?: number
+  ) => void;
   onBulkChange?: (
     items: { itemUpdated: T; originalIndex: number }[],
     headerId: string
@@ -79,6 +83,7 @@ export interface BaseTableProps<T> {
     columnsCount: number,
     isCollapsed: boolean,
     onCollapseGroup: (group: string) => void,
+    filteredItemsInGroup: ItemWithGroupInfo[],
     masterGroupName?: string,
     linkedGroupNames?: string[]
   ) => ReactNode;
@@ -197,6 +202,8 @@ export default function BaseTable<T extends TableItem>(
   const {
     selectedCell,
     expandedSelection,
+    setExpandedSelection,
+    setSelectedCell,
     isDragging,
     onCellBlur,
     onCellEnter,
@@ -230,6 +237,14 @@ export default function BaseTable<T extends TableItem>(
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // reset selection
+    setContextMenu(null);
+    clearActiveFilters();
+    setSelectedCell(undefined);
+    setExpandedSelection([]);
+  }, [props.headers]);
 
   const displayedRowsCount = useMemo(() => {
     if (!props.groupBy) {
@@ -267,7 +282,6 @@ export default function BaseTable<T extends TableItem>(
       item,
       header: leafHeaders[columnIndex],
     });
-    console.log("right click");
   };
 
   const getRowHighlightConditions = useCallback(
@@ -297,13 +311,19 @@ export default function BaseTable<T extends TableItem>(
     [props.highlightCondition]
   );
 
-  const renderIndexCell = (rowIndex: number, item: TableItem) => {
+  const renderIndexCell = (
+    rowIndex: number,
+    item: TableItem,
+    rowSpan: number
+  ) => {
     const isDropTarget = dropTargetIndex === rowIndex;
     const dropFromAbove =
       draggedRowIndex !== null && draggedRowIndex < rowIndex;
 
     return (
       <td
+        rowSpan={rowSpan}
+        style={{ alignContent: "start" }}
         className={`text-right pr-2 bg-gray-100 font-medium relative ${
           props.enableRowDragDrop ? "cursor-grab" : ""
         }`}
@@ -347,11 +367,7 @@ export default function BaseTable<T extends TableItem>(
         )}
         <div className="flex grow items-center justify-between">
           {props.enableRowDragDrop && (
-            <>
-              <Icon path={mdiDrag} color={"grey"} size={0.8} />
-            </>
-
-            // <span className="mr-1 text-gray-500 cursor-grab text-base">⋮⋮</span>
+            <Icon path={mdiDrag} color={"grey"} size={0.8} />
           )}
           {props.groupBy
             ? props.indexUseOriginalOrder
@@ -387,22 +403,31 @@ export default function BaseTable<T extends TableItem>(
     header: BaseTableHeader,
     rowIndex: number,
     columnIndex: number,
+    rowSpan: number,
+
     isInLinkedGroup?: boolean,
     rowStyle?: CSSProperties,
-    comments?: CommentData[]
+    comments?: CommentData[],
+    fromArrayData?: {
+      fromArray: string;
+      index: number;
+    }
   ) {
     return (
       <BaseTableCell
         style={rowStyle}
         isSelected={
           selectedCell?.rowIndex === rowIndex &&
-          selectedCell?.columnIndex === columnIndex
+          selectedCell?.columnIndex === columnIndex &&
+          selectedCell?.fromArrayData?.index === fromArrayData?.index
         }
         isInLinkedGroup={isInLinkedGroup}
         isInExpandedSelection={
           expandedSelection?.some(
             (cell) =>
-              cell.rowIndex === rowIndex && cell.columnIndex === columnIndex
+              cell.rowIndex === rowIndex &&
+              cell.columnIndex === columnIndex &&
+              cell.fromArrayData?.index === fromArrayData?.index
           ) || false
         }
         key={`item-${rowIndex}-${columnIndex}`}
@@ -423,8 +448,11 @@ export default function BaseTable<T extends TableItem>(
         onMouseEnter={(e) => handleCellMouseEnter(e, rowIndex, columnIndex)}
         onContextMenu={handleCellContextMenu}
         onAddOption={props.onAddListOption}
+        rowSpan={rowSpan}
+        fromArrayData={fromArrayData}
       />
     );
+    // );
   }
 
   function renderRow(item: TableItem, index: number, groupName?: string) {
@@ -446,57 +474,96 @@ export default function BaseTable<T extends TableItem>(
       opacity: draggedRowIndex === index ? 0.5 : 1,
       backgroundColor:
         dropTargetIndex === index ? "rgba(59, 130, 246, 0.1)" : undefined,
-      position: "relative" as const,
+      position: "relative" as "relative",
     };
 
     // const rowComments = [...comments].filter(
     //   (comment) => comment.columnId === undefined
     // );
 
-    // const dropIndicator = dropTargetIndex === index && (
-    //   <div
-    //     style={{
-    //       position: "absolute",
-    //       top: draggedRowIndex && draggedRowIndex < index ? "100%" : 0,
-    //       left: 0,
-    //       width: "100%",
-    //       height: "2px",
-    //       backgroundColor: "rgb(59, 130, 246)",
-    //       zIndex: 10,
-    //     }}
-    //   />
-    // );
+    let rowSpan = 0;
+
+    const fromArrayColumn = leafHeaders.filter((h) => h.fromArray);
+
+    if (fromArrayColumn.length > 0) {
+      leafHeaders.forEach((header) => {
+        if (header.fromArray && Array.isArray(item[header.fromArray])) {
+          rowSpan = Math.max(
+            rowSpan,
+            (item[header.fromArray] as unknown as any[]).length
+          );
+        }
+      });
+      rowSpan++;
+    }
 
     return (
-      <tr
-        style={rowStyle}
-        className={`${props.onRowDoubleClick ? "cursor-pointer" : ""}  `}
-        onDoubleClick={() => onRowDoubleClick(item)}
-        key={`item-${index}`}
-      >
-        {/* {dropIndicator} */}
-        {props.showIndex && renderIndexCell(index, item)}
-        {leafHeaders.map((header, j) => {
-          const cellStyle = getCellHighlightConditions(
-            highlightConditions,
-            header.id
-          );
+      <>
+        <tr
+          style={rowStyle}
+          className={`${props.onRowDoubleClick ? "cursor-pointer" : ""}`}
+          onDoubleClick={() => onRowDoubleClick(item)}
+          key={`item-${index}`}
+        >
+          {/* {dropIndicator} */}
+          {props.showIndex &&
+            renderIndexCell(index, item, Math.max(rowSpan, 1))}
+          {leafHeaders.map((header, j) => {
+            const cellStyle = getCellHighlightConditions(
+              highlightConditions,
+              header.id
+            );
 
-          const cellComments = comments.filter(
-            (comment) => comment.columnId === header.id
-          );
+            const cellComments = comments.filter(
+              (comment) => comment.columnId === header.id
+            );
 
-          return renderBaseTableCell(
-            item,
-            header,
-            index,
-            j,
-            groupName ? isGroupLinked(groupName) : undefined,
-            cellStyle,
-            cellComments
-          );
-        })}
-      </tr>
+            return renderBaseTableCell(
+              item,
+              header,
+              index,
+              j,
+              header.fromArray ? 1 : Math.max(rowSpan, 1),
+              groupName ? isGroupLinked(groupName) : undefined,
+              cellStyle,
+              cellComments
+              //{}, // fromArrayData
+            );
+          })}
+        </tr>
+        {fromArrayColumn.length > 0 &&
+          Array.from({ length: rowSpan - 1 }).map((_, rowIdx) => {
+            return (
+              <tr key={`item-array-${index}-${rowIdx}`}>
+                {fromArrayColumn.map((header, j) => {
+                  return renderBaseTableCell(
+                    item,
+                    header,
+                    index,
+                    j,
+                    header.fromArray ? 1 : rowSpan,
+                    groupName ? isGroupLinked(groupName) : undefined,
+                    {},
+                    [],
+                    {
+                      fromArray: header.fromArray!,
+                      index: rowIdx,
+                    } // fromArrayData
+                  );
+                  // <td
+                  //   key={`item-array-${index}-${rowIdx}-${header.id}`}
+                  //   rowSpan={1}
+                  // >
+                  //   {item[header.fromArray!] &&
+                  //   (item[header.fromArray!] as any[])[rowIdx]
+                  //     ? (item[header.fromArray!] as any[])[rowIdx][header.id]
+                  //     : ""}
+                  // </td>
+                })}
+              </tr>
+            );
+          })}
+      </>
     );
   }
 
@@ -528,7 +595,11 @@ export default function BaseTable<T extends TableItem>(
       style: {},
     };
 
-    props.onRemoveHighlightCondition?.(highlightCondition, cssPropertyToRemove);
+    props.onRemoveHighlightCondition?.(
+      highlightCondition,
+      cssPropertyToRemove,
+      item
+    );
   };
 
   const getActionsForCell = (item: TableItem, headerId: string) => {
@@ -556,8 +627,7 @@ export default function BaseTable<T extends TableItem>(
         icon: mdiCommentPlus,
         iconColor: "var(--comment-color)",
         text: `${comments.length > 0 ? "Edit" : "Add"} a comment`,
-        onClick: (item: TableItem, coordinates: CellCoordinate) => {
-          console.log(item);
+        onClick: (_item: TableItem, coordinates: CellCoordinate) => {
           setOpenCommentCell({
             rowIndex: coordinates.rowIndex,
             columnIndex: coordinates.columnIndex,
@@ -572,7 +642,6 @@ export default function BaseTable<T extends TableItem>(
           <>
             <ColorPicker
               initialColor={backgroundColor}
-              applyOpacity={0.2}
               onColorChange={(color) =>
                 setHighlightCondition(item, headerId, {
                   backgroundColor: color,
@@ -595,9 +664,7 @@ export default function BaseTable<T extends TableItem>(
             )}
           </>
         ),
-        onClick: (item: TableItem, coordinates: CellCoordinate) => {
-          console.log(item, coordinates);
-        },
+        onClick: (_: TableItem, _1: CellCoordinate) => {},
       },
     ];
   };
@@ -617,6 +684,7 @@ export default function BaseTable<T extends TableItem>(
           actions={getActionsForCell(contextMenu.item, contextMenu.header.id)}
         />
       )}
+
       {activeFilters.length > 0 && (
         <div style={{ width: "100%", display: "flex" }}>
           <BaseButton
@@ -629,6 +697,7 @@ export default function BaseTable<T extends TableItem>(
           />
         </div>
       )}
+
       <div
         ref={scrollRef}
         className="overflow-auto h-min"
@@ -640,7 +709,10 @@ export default function BaseTable<T extends TableItem>(
           // scrollbarWidth: "thin",
         }}
       >
-        <div>TEST222</div>
+        {/* Col: {selectedCell?.columnIndex}
+        <br />
+        Row: {selectedCell?.rowIndex} <br />
+        ** idx:{selectedCell?.fromArrayData?.index} <br /> */}
         <table
           ref={tableRef}
           onMouseMove={onMouseMove}
@@ -650,9 +722,15 @@ export default function BaseTable<T extends TableItem>(
             userSelect: isDragging ? "none" : "auto",
             WebkitUserSelect: isDragging ? "none" : "auto",
           }}
-          className={`table table-xs table-pin-rows ${
-            props.pinColumns ? "table-pin-cols" : ""
-          }  border border-gray-300!`}
+          className={`table table-xs table-pin-rows 
+             ${
+               false
+                 ? " will-change-transform touch overflow-contain transform-gpu backface-hidden "
+                 : ""
+             } 
+             ${
+               props.pinColumns ? " table-pin-cols" : ""
+             }  border border-gray-300!`}
           // onKeyDown={(e) =>
           //   handleCellKeyDown(
           //     e,
@@ -690,6 +768,13 @@ export default function BaseTable<T extends TableItem>(
                     flatGroupedItemsToDisplay[virtualRows.index];
 
                   if (itemOrGroup.isGroup === true) {
+                    const filteredItemsInGroup =
+                      flatGroupedItemsToDisplay.filter(
+                        (item) =>
+                          itemOrGroup.groupName === item.groupName &&
+                          !item.isGroup
+                      );
+
                     return (
                       <Fragment key={`group-${itemOrGroup.groupName}`}>
                         <BaseTableGroupRow
@@ -711,6 +796,7 @@ export default function BaseTable<T extends TableItem>(
                               leafHeaders.length + (props.showIndex ? 1 : 0),
                               itemOrGroup.isCollapsed || false,
                               onCollapseGroup,
+                              filteredItemsInGroup as ItemWithGroupInfo[],
                               itemOrGroup.masterGroupName,
                               itemOrGroup.linkedGroupNames
                             )
@@ -748,3 +834,4 @@ export default function BaseTable<T extends TableItem>(
     </>
   );
 }
+

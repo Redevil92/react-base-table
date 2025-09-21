@@ -23,7 +23,7 @@ export interface BaseTableProps {
   onSetFilter?: (headerId: string, itemsToHide: string[] | number[]) => void;
 }
 
-export default function BaseTable({
+export default function BaseTableHeader({
   header,
   noBorder,
   showFilter,
@@ -48,72 +48,68 @@ export default function BaseTable({
   };
 
   return (
-    <>
-      <th
-        className={`${
-          !noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""
-        } `}
-        key={`header-${header.id}`}
-      >
-        <div className="flex justify-between">
-          <div className="flex">
-            {header.customHeader ? (
-              header.customHeader(header)
-            ) : (
-              <button
-                onClick={() => onSortByColumn?.(header)}
-                className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
-                  header.sortable
-                    ? "cursor-pointer hover:underline"
-                    : "cursor-default"
-                }`}
-              >
-                {header.text}
-              </button>
-            )}
-
-            {isSorted && (
-              <>
-                <Icon
-                  path={ascendingOrder ? mdiArrowUp : mdiArrowDown}
-                  color={"grey"}
-                  size={0.6}
-                />
-                <button
-                  onClick={onResetSort}
-                  className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
-                         `}
-                >
-                  <Icon path={mdiCloseCircle} color={"grey"} size={0.6} />
-                </button>
-              </>
-            )}
-          </div>
-
-          {header.hasFilter ? (
-            <div className="ml-2">
-              <TableFilter
-                show={!!showFilter}
-                tableRef={tableRef}
-                currentFilter={activeFilter}
-                filterName={header.text}
-                headerId={header.id}
-                filterType={FilterTypes.STRING}
-                items={getFilterItemsForHeader(header.id)}
-                itemsToHide={activeFilter?.itemsToHide ?? []}
-                onShowOrHide={(show: boolean) =>
-                  onShowFilter?.(show, header.id)
-                }
-                onSetFilter={(id, itemsToHide: string[] | number[]) => {
-                  onSetFilter?.(id, itemsToHide);
-                }}
-              />
-            </div>
+    <th
+      className={` ${
+        !noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""
+      } `}
+      key={`header-${header.id}`}
+    >
+      <div className="flex justify-between">
+        <div className="flex">
+          {header.customHeader ? (
+            header.customHeader(header)
           ) : (
-            <></>
+            <button
+              onClick={() => onSortByColumn?.(header)}
+              className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
+                header.sortable
+                  ? "cursor-pointer hover:underline"
+                  : "cursor-default"
+              }`}
+            >
+              {header.text}
+            </button>
+          )}
+
+          {isSorted && (
+            <>
+              <Icon
+                path={ascendingOrder ? mdiArrowUp : mdiArrowDown}
+                color={"grey"}
+                size={0.6}
+              />
+              <button
+                onClick={onResetSort}
+                className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
+                         `}
+              >
+                <Icon path={mdiCloseCircle} color={"grey"} size={0.6} />
+              </button>
+            </>
           )}
         </div>
-      </th>
-    </>
+
+        {header.hasFilter ? (
+          <div className="ml-2">
+            <TableFilter
+              show={!!showFilter}
+              tableRef={tableRef}
+              currentFilter={activeFilter}
+              filterName={header.text}
+              headerId={header.id}
+              filterType={FilterTypes.STRING}
+              items={getFilterItemsForHeader(header.id)}
+              itemsToHide={activeFilter?.itemsToHide ?? []}
+              onShowOrHide={(show: boolean) => onShowFilter?.(show, header.id)}
+              onSetFilter={(id, itemsToHide: string[] | number[]) => {
+                onSetFilter?.(id, itemsToHide);
+              }}
+            />
+          </div>
+        ) : (
+          <></>
+        )}
+      </div>
+    </th>
   );
 }

@@ -17,13 +17,13 @@ export const useRowDragDrop = ({
   onRowsReordered,
   groupBy,
 }: UseRowDragDropProps) => {
-  console.log(items);
   const [draggedRowIndex, setDraggedRowIndex] = useState<number | null>(null);
   const [draggedItem, setDraggedItem] = useState<TableItem | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [isDraggingRow, setIsDraggingRow] = useState(false);
 
   const handleDragEnd = useCallback(() => {
+    console.log(items); //SB: this might be removed
     setDraggedRowIndex(null);
     setDropTargetIndex(null);
     setIsDraggingRow(false);

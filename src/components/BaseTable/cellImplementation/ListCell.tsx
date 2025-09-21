@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import BaseButton from "../../BaseButton";
-import { mdiArrowRight, mdiClose, mdiPlus } from "@mdi/js";
+import { mdiArrowRight } from "@mdi/js";
 
 interface ListCellProps {
   // Define your props here
@@ -12,12 +12,9 @@ interface ListCellProps {
   hideOptions?: boolean;
 }
 
-export default function ListCell(props: ListCellProps) {
+export default function ListCell(props: Readonly<ListCellProps>) {
   const [showOptions, setShowOptions] = useState(true);
   const [searchValue, setSearchValue] = useState("");
-
-  const [optionToAdd, setOptionToAdd] = useState("");
-  const [showAddOption, setShowAddOption] = useState(false);
 
   const filteredOptions = useMemo(() => {
     return props.options.filter((option) =>
@@ -28,18 +25,17 @@ export default function ListCell(props: ListCellProps) {
   return (
     <div className="relative ">
       <div
-        className="flex justify-between "
-        onClick={() => setShowOptions(true)}
+        className="flex justify-between min-h-4"
+        onClick={() => {
+          console.log("clicked", !showOptions);
+          setShowOptions(!showOptions);
+        }}
       >
         <div className=" truncate whitespace-nowrap overflow-ellipsis">
           {props.value}
         </div>
 
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowOptions(!showOptions);
-          }}
+        <button
           className="ml-1 w-0 h-0"
           style={{
             borderLeft: "4px solid transparent",
@@ -55,34 +51,55 @@ export default function ListCell(props: ListCellProps) {
           className="absolute  bg-base-100   border border-[var(--border-color)]  z-1 w-52 p-2 shadow-sm"
           style={{ left: "-8px", top: "23px" }}
         >
-          <label className="input input-xs">
-            <svg
-              className="h-[1em] opacity-50"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-            >
-              <g
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                strokeWidth="2.5"
-                fill="none"
-                stroke="currentColor"
+          <div className="flex">
+            <label className="input input-xs">
+              <svg
+                className="h-[1em] opacity-50"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
               >
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.3-4.3"></path>
-              </g>
-            </svg>
-            <input
-              type="search"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              required
-              placeholder="Search"
-            />
-          </label>
+                <g
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  strokeWidth="2.5"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </g>
+              </svg>
+              <input
+                type="search"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                required
+                placeholder="Search"
+              />{" "}
+            </label>
+            {searchValue && filteredOptions.length === 0 && (
+              <BaseButton
+                className="ml-2"
+                small
+                icon={mdiArrowRight}
+                iconColor={"#6161BB"}
+                circle
+                disabled={props.options.includes(searchValue.trim())}
+                onClick={() => {
+                  props.addOption?.(searchValue.trim());
+                  setSearchValue("");
+                }}
+                tooltip={
+                  props.options.includes(searchValue.trim())
+                    ? "Option already in the list"
+                    : ""
+                }
+              />
+            )}
+          </div>
 
           <div className="my-2">
-            <BaseButton
+            {/* <BaseButton
               small
               icon={showAddOption ? mdiClose : mdiPlus}
               iconColor={!showAddOption ? "#6161BB" : "var(--error-color)"}
@@ -90,8 +107,8 @@ export default function ListCell(props: ListCellProps) {
               onClick={() => {
                 setShowAddOption(!showAddOption);
               }}
-            />
-            {showAddOption && (
+            /> */}
+            {/* {showAddOption && (
               <div className="mt-2 flex">
                 <input
                   value={optionToAdd}
@@ -118,7 +135,7 @@ export default function ListCell(props: ListCellProps) {
                   }
                 />
               </div>
-            )}
+            )} */}
           </div>
 
           <div className="max-h-46 overflow-auto">

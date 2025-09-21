@@ -53,11 +53,10 @@ export default function useDragSelection(
 
   const onCellMouseDown = useCallback(
     (
-      e: React.MouseEvent<HTMLTableCellElement>,
+      _: React.MouseEvent<HTMLTableCellElement>,
       rowIndex: number,
       columnIndex: number
     ) => {
-      console.log(e);
       //e.preventDefault();
 
       mouseDownRef.current = true;
@@ -70,11 +69,10 @@ export default function useDragSelection(
 
   const onCellMouseEnter = useCallback(
     (
-      e: React.MouseEvent<HTMLTableCellElement>,
+      _e: React.MouseEvent<HTMLTableCellElement>,
       rowIndex: number,
       columnIndex: number
     ) => {
-      console.log(e);
       //e.stopPropagation();
       if (!isDragging || !dragStartCell) return;
 
