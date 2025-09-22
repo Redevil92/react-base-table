@@ -6,10 +6,10 @@ export default function BaseTableWithContext<T extends TableItem>(
   props: Readonly<BaseTableProps<T>>
 ) {
   return (
-    <>
+    <div className="react-base-table">
       <CommentPopupProvider>
         <BaseTable {...props}></BaseTable>
       </CommentPopupProvider>
-    </>
+    </div>
   );
 }

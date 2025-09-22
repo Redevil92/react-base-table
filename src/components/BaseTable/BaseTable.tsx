@@ -37,6 +37,7 @@ import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
 import ColorPicker from "../ColorPicker";
 import { useRowDragDrop } from "./hooks/useRowDragDrop";
 import Icon from "@mdi/react";
+import "../../index.css";
 
 export interface BaseTableProps<T> {
   height?: string;
@@ -789,17 +790,21 @@ export default function BaseTable<T extends TableItem>(
                           masterGroupName={itemOrGroup.masterGroupName} // Pass master group name if available
                           linkedGroupNames={itemOrGroup.linkedGroupNames} // Pass linked group names if available
                           onCollapseGroup={onCollapseGroup}
-                          groupByCustomRender={(groupBy, value) =>
-                            props.groupByCustomRender?.(
-                              groupBy,
-                              value,
-                              leafHeaders.length + (props.showIndex ? 1 : 0),
-                              itemOrGroup.isCollapsed || false,
-                              onCollapseGroup,
-                              filteredItemsInGroup as ItemWithGroupInfo[],
-                              itemOrGroup.masterGroupName,
-                              itemOrGroup.linkedGroupNames
-                            )
+                          groupByCustomRender={
+                            props.groupByCustomRender
+                              ? (groupBy, value) =>
+                                  props.groupByCustomRender?.(
+                                    groupBy,
+                                    value,
+                                    leafHeaders.length +
+                                      (props.showIndex ? 1 : 0),
+                                    itemOrGroup.isCollapsed || false,
+                                    onCollapseGroup,
+                                    filteredItemsInGroup as ItemWithGroupInfo[],
+                                    itemOrGroup.masterGroupName,
+                                    itemOrGroup.linkedGroupNames
+                                  )
+                              : undefined
                           }
                         />
                       </Fragment>
@@ -834,4 +839,3 @@ export default function BaseTable<T extends TableItem>(
     </>
   );
 }
-

@@ -1,6 +1,6 @@
 {
   "name": "react-base-data-table",
-  "version": "0.1.0",
+  "version": "0.3.7",
   "license": "MIT",
   "type": "module",
   "types": "dist/types/index.d.ts",
