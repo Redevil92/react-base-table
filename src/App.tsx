@@ -26,6 +26,13 @@ function App() {
       ),
     },
     {
+      id: "group",
+      text: "Group",
+      sortable: true,
+      hasFilter: false,
+      width: 50,
+    },
+    {
       id: "tag",
       text: "id",
       sortable: true,
@@ -127,8 +134,10 @@ function App() {
           items={items}
           activeFilters={activeFilters}
           groupBy="group"
+          groupByCustomRender={undefined}
           onChange={onCellBlur}
           onBulkChange={onBulkChange}
+          hasContextMenu={true}
           // groupByRender={() => (
           //   <span className="font-semibold text-lg">{item.name}</span>
           // )}

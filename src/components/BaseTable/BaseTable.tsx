@@ -58,6 +58,7 @@ export interface BaseTableProps<T> {
   currentUsername?: string;
   linkedGroups?: { master: string; linked: string[] }[];
   enableRowDragDrop?: boolean;
+  hasContextMenu?: boolean;
   onSetHighlightCondition?: (
     highlightCondition: HighlightCondition,
     item: TableItem
@@ -672,7 +673,7 @@ export default function BaseTable<T extends TableItem>(
 
   return (
     <>
-      {contextMenu && (
+      {contextMenu && props.hasContextMenu && (
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
