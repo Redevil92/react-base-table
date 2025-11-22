@@ -1,99 +1,206 @@
-import { memo } from "react";
-import type BaseTableHeader from "./models/BaseTableHeaders";
-import type CommentData from "./models/CommentData";
-import type HighlightCondition from "./models/HighlightCondition";
+import { memo, useMemo } from "react";
 import type TableItem from "./models/TableItem";
+import BaseTableCell from "./tableCell/BaseTableCell";
+import { useTableInteractionContext } from "./contexts/useTableInteractionContext";
+import {
+  useAdvancedSettings,
+  useComments,
+  useGroupBy,
+  useHighlightConditions,
+  useProcessedLeafHeaders,
+} from "../../stores/tableDataStore";
+import {
+  getCellHighlightConditions,
+  getRowHighlightConditions,
+} from "./tableFunctions/highlightCondition";
+import IndexCell from "./tableCell/IndexCell";
 
 interface TableRowProps {
   item: TableItem;
   index: number;
   groupName?: string;
-  leafHeaders: BaseTableHeader[];
-  renderIndexCell: (rowIndex: number, item: TableItem) => React.ReactNode;
-  getRowHighlightConditions: (row: TableItem) => HighlightCondition[];
-  getCellHighlightConditions: (
-    rowConditions: HighlightCondition[],
-    columnId: string
-  ) => React.CSSProperties;
-  comments?: CommentData[];
   isGroupLinked?: (groupName: string) => boolean;
-  onRowDoubleClick?: (item: TableItem) => void;
-  renderBaseTableCell: (
-    item: TableItem,
-    header: BaseTableHeader,
-    rowIndex: number,
-    columnIndex: number,
-    disabled?: boolean,
-    rowStyle?: React.CSSProperties,
-    comments?: CommentData[]
-  ) => React.ReactNode;
-  selectedCell?: { rowIndex: number; columnIndex: number };
-  expandedSelection?: { rowIndex: number; columnIndex: number }[];
-  noBorder?: boolean;
-  contrastRow?: boolean;
+  ref: React.Ref<HTMLTableRowElement>;
+  dataIndex: number;
 }
 
 const TableRow: React.FC<TableRowProps> = memo((props) => {
-  const {
-    item,
-    index,
-    groupName,
-    leafHeaders,
-    renderIndexCell,
-    getRowHighlightConditions,
-    getCellHighlightConditions,
-    comments = [],
-    isGroupLinked,
-    onRowDoubleClick,
-    renderBaseTableCell,
-  } = props;
+  const advancedSettings = useAdvancedSettings();
+  const processedLeafHeaders = useProcessedLeafHeaders();
+  const groupBy = useGroupBy();
+  const comments = useComments();
+  const highlightConditions = useHighlightConditions();
 
-  const highlightConditions = getRowHighlightConditions(item);
+  const { draggedRowIndex, dropTargetIndex, onRowDoubleClick } =
+    useTableInteractionContext();
 
-  const rowStyle = highlightConditions
-    .filter((condition) => !condition.columnId)
-    .reduce(
-      (acc, condition) => ({
-        ...acc,
-        ...(condition.style || {}),
-      }),
-      {}
-    );
+  // const cellCommentMap = useMemo(() => {
+  //   const map = new Map();
+  //   comments.forEach((comment) => {
+  //     const key = `${comment.columnId}-${comment.propertyId}-${comment.value}`;
+  //     if (!map.has(key)) map.set(key, []);
+  //     map.get(key).push(comment);
+  //   });
+  //   return map;
+  // }, [comments]);
 
-  // const rowComments = [...comments].filter(
-  //   (comment) => comment.columnId === undefined
-  // );
+  const rowHighlightConditions = useMemo(() => {
+    return getRowHighlightConditions(props.item, highlightConditions);
+  }, [highlightConditions, props.item]);
+
+  const rowStyle = useMemo(() => {
+    return {
+      ...rowHighlightConditions
+        .filter((condition) => !condition.columnId)
+        .reduce(
+          (acc, condition) => ({ ...acc, ...(condition.style || {}) }),
+          {}
+        ),
+
+      opacity: draggedRowIndex === props.index ? 0.5 : 1,
+      backgroundColor:
+        dropTargetIndex === props.index ? "rgba(59, 130, 246, 0.1)" : undefined,
+      position: "relative" as "relative",
+    };
+  }, [rowHighlightConditions, draggedRowIndex, dropTargetIndex, props.index]);
+
+  let rowSpan = 0;
+
+  const fromArrayColumn = processedLeafHeaders.filter((h) => h.fromArray);
+
+  if (fromArrayColumn.length > 0) {
+    processedLeafHeaders.forEach((header) => {
+      if (header.fromArray && Array.isArray(props.item[header.fromArray])) {
+        rowSpan = Math.max(
+          rowSpan,
+          (props.item[header.fromArray] as unknown as any[]).length
+        );
+      }
+    });
+    rowSpan++;
+  }
+
+  const mainRowCells = useMemo(() => {
+    return processedLeafHeaders.map((header, j) => {
+      const cellStyle = getCellHighlightConditions(
+        rowHighlightConditions,
+        header.id
+      );
+
+      const cellComments = comments.filter(
+        (comment) =>
+          comment.columnId === header.id &&
+          props.item[comment.propertyId] === comment.value
+      );
+
+      return (
+        <BaseTableCell
+          isInLinkedGroup={
+            (props.groupName && props.isGroupLinked
+              ? props.isGroupLinked(props.groupName)
+              : undefined) || false
+          }
+          key={`item-${props.index}-${j}-${header.id}`}
+          header={header}
+          item={props.item}
+          style={cellStyle}
+          rowIndex={props.index}
+          columnIndex={j}
+          comments={cellComments}
+          rowSpan={header.fromArray ? 1 : Math.max(rowSpan, 1)}
+        />
+      );
+    });
+  }, [
+    processedLeafHeaders,
+    props.index,
+    props.item,
+    props.groupName,
+    props.isGroupLinked,
+    rowHighlightConditions,
+    comments,
+    rowSpan,
+  ]);
+
+  const rowId = useMemo(() => {
+    return advancedSettings?.rowIdProperty
+      ? String(props.item[advancedSettings.rowIdProperty])
+      : undefined;
+  }, [props.item]);
+
+  const arrayRows = useMemo(() => {
+    if (fromArrayColumn.length === 0 || rowSpan <= 1) return null;
+
+    return Array.from({ length: rowSpan - 1 }).map((_, rowIdx) => {
+      return (
+        <tr key={`item-array-${props.index}-${rowIdx}`}>
+          {fromArrayColumn.map((header, j) => {
+            const originalColumnIndex = processedLeafHeaders.findIndex(
+              (h) => h.id === header.id
+            );
+
+            return (
+              <BaseTableCell
+                isInLinkedGroup={
+                  (props.groupName && props.isGroupLinked
+                    ? props.isGroupLinked(props.groupName)
+                    : undefined) || false
+                }
+                key={`item-${props.index}-${j}`}
+                header={header}
+                item={props.item}
+                style={{}}
+                rowIndex={props.index}
+                columnIndex={originalColumnIndex}
+                comments={[]}
+                rowSpan={header.fromArray ? 1 : rowSpan}
+                fromArrayData={{
+                  fromArray: header.fromArray!,
+                  index: rowIdx,
+                }}
+              />
+            );
+          })}
+        </tr>
+      );
+    });
+  }, [
+    fromArrayColumn,
+    props.index,
+    props.item,
+    props.groupName,
+    props.isGroupLinked,
+    rowSpan,
+  ]);
 
   return (
-    <tr
-      style={rowStyle}
-      className={`${onRowDoubleClick ? "cursor-pointer" : ""}`}
-      onDoubleClick={() => onRowDoubleClick?.(item)}
-      key={`item-${index}`}
-    >
-      {renderIndexCell(index, item)}
-      {leafHeaders.map((header, j) => {
-        const cellStyle = getCellHighlightConditions(
-          highlightConditions,
-          header.id
-        );
+    <>
+      <tr
+        id={rowId}
+        style={rowStyle}
+        // data-index={props.index}
+        className={`${onRowDoubleClick ? "cursor-pointer" : ""}`}
+        onDoubleClick={
+          onRowDoubleClick ? () => onRowDoubleClick(props.item) : undefined
+        }
+        key={`item-${groupBy ? props.item.groupName : ""}-${props.index}`}
+        ref={props.ref}
+        data-index={props.dataIndex}
+      >
+        {advancedSettings?.showIndex && (
+          <IndexCell
+            item={props.item}
+            rowIndex={props.index}
+            rowSpan={Math.max(rowSpan, 1)}
+          />
+        )}
 
-        const cellComments = comments.filter(
-          (comment) => comment.columnId === header.id
-        );
-
-        return renderBaseTableCell(
-          item,
-          header,
-          index,
-          j,
-          groupName ? isGroupLinked?.(groupName) : undefined,
-          cellStyle,
-          cellComments
-        );
-      })}
-    </tr>
+        {mainRowCells}
+      </tr>
+      {arrayRows}
+    </>
   );
 });
 
 export default TableRow;
+

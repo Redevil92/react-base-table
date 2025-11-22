@@ -5,7 +5,11 @@ export default interface ContextMenuAction {
   icon?: string;
   iconColor?: string;
   text: string;
-  onClick: (item: TableItem, itemCoordinates: CellCoordinate) => void;
+  onClick: (
+    event: React.MouseEvent,
+    item?: TableItem,
+    itemCoordinates?: CellCoordinate
+  ) => void;
   groupName?: string;
   disabled?: boolean;
   subActions?: ContextMenuAction[];

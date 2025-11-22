@@ -1,52 +1,37 @@
 // src/components/BaseTable/hooks/useTableGrouping.ts
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type TableItem from "../models/TableItem";
 import type ItemWithGroupInfo from "../models/ItemWithGroupInfo";
 import type GroupInfo from "../models/GroupInfo";
+import {
+  useCollapsedGroups,
+  useGroupBy,
+  useLinkedGroups,
+  useProcessedItems,
+} from "../../../stores/tableDataStore";
 
 interface GroupedItems {
   [key: string]: { rowIndex: number; item: TableItem }[];
 }
 
-interface LinkedGroup {
-  master: string;
-  linked: string[];
-}
-
 interface UseTableGroupingReturn {
-  groupedItems: GroupedItems;
   groupedItemsEntries: [string, { rowIndex: number; item: TableItem }[]][];
-  collapsedGroups: string[];
-  flatGroupedItemsToDisplay: Array<GroupInfo | ItemWithGroupInfo>;
-  onCollapseGroup: (group: string) => void;
-  setCollapsedGroup: (groupNames: string[]) => void;
+  flatGroupedItems: Array<GroupInfo | ItemWithGroupInfo>;
+
   isGroupLinked: (groupName: string) => boolean;
   getMasterGroupNameLinked: (groupName: string) => string | undefined;
 }
 
-export default function useTableGrouping(
-  filteredItems: TableItem[],
-  groupBy?: string,
-  linkedGroups?: LinkedGroup[]
-): UseTableGroupingReturn {
-  const [collapsedGroups, setCollapsedGroup] = useState<string[]>([]);
-
-  const onCollapseGroup = useCallback((group: string) => {
-    setCollapsedGroup((prevGroups) => {
-      const isCollapsed = prevGroups.includes(group);
-
-      const newCollapsedGroups = isCollapsed
-        ? prevGroups.filter((g) => g !== group) // Uncollapse
-        : [...prevGroups, group]; // Collapse
-
-      return newCollapsedGroups;
-    });
-  }, []);
+export default function useTableGrouping(): UseTableGroupingReturn {
+  const collapsedGroups = useCollapsedGroups();
+  const linkedGroups = useLinkedGroups();
+  const groupBy = useGroupBy();
+  const processedItems = useProcessedItems();
 
   // Group items by the groupBy property
   const groupedItems = useMemo(() => {
     if (!groupBy) {
-      const ungroupedItems = filteredItems.map((item, index) => ({
+      const ungroupedItems = processedItems.map((item, index) => ({
         rowIndex: index,
         item,
       }));
@@ -54,7 +39,7 @@ export default function useTableGrouping(
     }
 
     // First pass: group items by the groupBy property
-    const grouped = filteredItems.reduce((acc, item) => {
+    const grouped = processedItems.reduce((acc, item) => {
       const key = item[groupBy] as string | number;
       if (!acc[key]) {
         acc[key] = [];
@@ -74,7 +59,7 @@ export default function useTableGrouping(
     });
 
     return groupedWithIndexes;
-  }, [filteredItems, groupBy]);
+  }, [processedItems, groupBy]);
 
   const groupedItemsEntries = useMemo(() => {
     const entries = Object.entries(groupedItems);
@@ -143,7 +128,7 @@ export default function useTableGrouping(
       });
       return [groupName, updatedItems] as [
         string,
-        { rowIndex: number; item: TableItem }[]
+        { rowIndex: number; item: TableItem }[],
       ];
     });
   }, [groupedItems, linkedGroups]);
@@ -155,7 +140,7 @@ export default function useTableGrouping(
     };
   }, [linkedGroups]);
 
-  const flatGroupedItemsToDisplay = useMemo(() => {
+  const flatGroupedItems = useMemo(() => {
     const result: Array<GroupInfo | ItemWithGroupInfo> = [];
 
     groupedItemsEntries.forEach(([groupName, items]) => {
@@ -171,18 +156,15 @@ export default function useTableGrouping(
         )?.linked,
       });
 
-      // Add items only if group is not collapsed
-      if (!isCollapsed) {
-        items.forEach(({ rowIndex, item }) => {
-          result.push({
-            isGroup: false,
-            rowIndex,
-            groupName,
-            isCollapsed: isCollapsed,
-            item,
-          });
+      items.forEach(({ rowIndex, item }) => {
+        result.push({
+          isGroup: false,
+          rowIndex,
+          groupName,
+          isCollapsed: isCollapsed,
+          item,
         });
-      }
+      });
     });
 
     return result;
@@ -196,12 +178,8 @@ export default function useTableGrouping(
   }, [linkedGroups]);
 
   return {
-    groupedItems,
     groupedItemsEntries,
-    collapsedGroups,
-    flatGroupedItemsToDisplay,
-    onCollapseGroup,
-    setCollapsedGroup,
+    flatGroupedItems,
     isGroupLinked,
     getMasterGroupNameLinked,
   };

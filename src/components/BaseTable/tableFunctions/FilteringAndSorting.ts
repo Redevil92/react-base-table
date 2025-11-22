@@ -13,19 +13,14 @@ export const filterItems = (
   items: TableItem[],
   filters: ActiveTableFilter[]
 ): TableItem[] => {
+  const itemsCopy = JSON.parse(JSON.stringify(items));
   if (items.length === 0) return [];
-  if (filters.length === 0) return [...items];
-
-  return [...items].filter((item: any) => {
+  if (filters.length === 0) return itemsCopy;
+  return itemsCopy.filter((item: any) => {
     for (const filter of filters) {
       let itemToCheck: string | number | boolean = item[filter.headerId];
       let shouldHide = false;
 
-      //   if (isArrayOfType(filter.itemsToHide, "boolean")) {
-      //     shouldHide = (filter.itemsToHide as boolean[]).includes(
-      //       itemToCheck as boolean
-      //     );
-      //   } else
       if (isNumberArray(filter.itemsToHide)) {
         itemToCheck =
           typeof itemToCheck === "string"
@@ -50,7 +45,7 @@ export const sortItems = (
   currentSortType: "asc" | "desc",
   sortBy: string | undefined
 ): TableItem[] => {
-  let itemsCopy = [...items];
+  const itemsCopy = [...items];
 
   if (!sortBy) return itemsCopy;
 

@@ -1,4 +1,7 @@
 import type CellCoordinate from "../models/CellCordinate";
+import type TableItem from "../models/TableItem";
+import type BaseTableHeader from "../models/BaseTableHeaders";
+import { getCellId } from "../../../utils/cellIdCreation";
 
 type ArrowKey = "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
 
@@ -7,7 +10,9 @@ const calculateSelectedCellAndExpandedSelection = (
   selectedCell: CellCoordinate | undefined,
   expandedSelection: CellCoordinate[],
   columnsCount: number,
-  rowsCount: number
+  rowsCount: number,
+  processedLeafHeaders: BaseTableHeader[],
+  selectedItem?: TableItem
 ) => {
   e.stopPropagation();
 
@@ -54,6 +59,17 @@ const calculateSelectedCellAndExpandedSelection = (
         }
       }
     } else {
+      const nextFromArrayCell = getNextFromArrayCell(
+        e,
+        processedLeafHeaders,
+        selectedCell,
+        selectedItem
+      );
+
+      if (nextFromArrayCell) {
+        return { newSelectedCell: nextFromArrayCell, newExpandedSelection: [] };
+      }
+
       // No expanded selection, revert to existing table-wide navigation
       nextCol = (selectedCell?.columnIndex ?? 0) + (e.shiftKey ? -1 : 1);
 
@@ -123,6 +139,98 @@ const calculateSelectedCellAndExpandedSelection = (
     newSelectedCell,
     newExpandedSelection,
   };
+};
+
+const getNextFromArrayCell = (
+  e: React.KeyboardEvent,
+  processedLeafHeaders: BaseTableHeader[],
+  selectedCell: CellCoordinate | undefined,
+  selectedItem?: TableItem
+): CellCoordinate | undefined => {
+  const isFromArrayCell = selectedCell?.fromArrayData;
+
+  if (!isFromArrayCell || !selectedItem) return undefined;
+
+  const currentArray = selectedItem[isFromArrayCell.fromArray] as TableItem[];
+  const arrayCellCount = currentArray?.length ?? 0;
+
+  if (!arrayCellCount) return undefined;
+
+  let nextCell = document.getElementById(
+    getCellId(
+      selectedCell!.rowIndex,
+      selectedCell!.columnIndex + (e.shiftKey ? -1 : 1),
+      {
+        index: isFromArrayCell.index,
+      }
+    )
+  );
+
+  if (nextCell) {
+    return {
+      rowIndex: selectedCell!.rowIndex,
+      columnIndex: selectedCell!.columnIndex + (e.shiftKey ? -1 : 1),
+      fromArrayData: {
+        fromArray: selectedCell!.fromArrayData!.fromArray,
+        index: isFromArrayCell.index,
+      },
+    };
+  }
+
+  if (
+    selectedItem &&
+    (selectedItem[selectedCell!.fromArrayData!.fromArray] as TableItem[])
+      .length > 0
+  ) {
+    const firstFromArrayColumnIndex = processedLeafHeaders.findIndex(
+      (header) => header.fromArray === selectedCell!.fromArrayData!.fromArray
+    );
+    let lastFromArrayColumnIndex: number | undefined = undefined;
+    processedLeafHeaders.forEach((header) => {
+      if (header.fromArray === selectedCell!.fromArrayData!.fromArray) {
+        lastFromArrayColumnIndex = processedLeafHeaders.indexOf(header);
+      }
+    });
+
+    // not shiftKey
+    if (!e.shiftKey) {
+      // find first fromArray column
+
+      nextCell = document.getElementById(
+        getCellId(selectedCell!.rowIndex, firstFromArrayColumnIndex, {
+          index: selectedCell!.fromArrayData!.index + 1,
+        })
+      );
+      if (nextCell) {
+        return {
+          rowIndex: selectedCell!.rowIndex,
+          columnIndex: firstFromArrayColumnIndex,
+          fromArrayData: {
+            fromArray: selectedCell!.fromArrayData!.fromArray,
+            index: selectedCell!.fromArrayData!.index + 1,
+          },
+        };
+      }
+    } else {
+      nextCell = document.getElementById(
+        getCellId(selectedCell!.rowIndex, lastFromArrayColumnIndex!, {
+          index: selectedCell!.fromArrayData!.index - 1,
+        })
+      );
+      if (nextCell) {
+        return {
+          rowIndex: selectedCell!.rowIndex,
+          columnIndex: lastFromArrayColumnIndex!,
+          fromArrayData: {
+            fromArray: selectedCell!.fromArrayData!.fromArray,
+            index: selectedCell!.fromArrayData!.index - 1,
+          },
+        };
+      }
+    }
+  }
+
+  return undefined;
 };
 
 function expandSelectionWithArrow(

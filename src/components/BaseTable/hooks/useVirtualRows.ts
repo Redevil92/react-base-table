@@ -1,9 +1,11 @@
 import { notUndefined, useVirtualizer } from "@tanstack/react-virtual";
 import type { MutableRefObject } from "react";
 
-const CELL_HEIGHT = 20;
+const CELL_HEIGHT = 25;
 
-const OVERSCAN = 6;
+const OVERSCAN = 40;
+const SCROLL_MARGIN = 20;
+// Add margin to prevent boundary flickering
 
 export type Props = {
   rowsCount: number;
@@ -16,6 +18,15 @@ export const useVirtualRows = ({ rowsCount, scrollRef }: Props) => {
     getScrollElement: () => scrollRef.current,
     estimateSize: () => CELL_HEIGHT,
     overscan: OVERSCAN,
+    scrollMargin: SCROLL_MARGIN,
+    lanes: 1,
+    measureElement:
+      typeof window !== "undefined" &&
+      navigator.userAgent.indexOf("Firefox") === -1
+        ? (element) => {
+            return element?.getBoundingClientRect().height;
+          }
+        : undefined,
   });
 
   // This will replace "real" rows for rendering
@@ -30,6 +41,6 @@ export const useVirtualRows = ({ rowsCount, scrollRef }: Props) => {
         ]
       : [0, 0];
 
-  return { virtualRows, before, after };
+  return { virtualizer, virtualRows, before, after };
 };
 

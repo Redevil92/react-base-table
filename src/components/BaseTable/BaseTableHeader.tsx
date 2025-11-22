@@ -1,77 +1,139 @@
 import type BaseTableHeader from "./models/BaseTableHeaders";
-import type TableItem from "./models/TableItem";
-import type ActiveTableFilter from "./models/ActiveTableFilter";
-import TableFilter from "./TableFilter";
+import TableFilter from "./tableFilter/TableFilter";
 
 import { mdiArrowDown, mdiArrowUp, mdiCloseCircle } from "@mdi/js";
 import Icon from "@mdi/react";
 
 import { FilterTypes } from "../../enum/FilterTypes";
+import {
+  useActiveFilters,
+  useAdvancedSettings,
+  useAscendingOrder,
+  useCurrentSortId,
+  useFilterItemsCache,
+  useTableDataActions,
+} from "../../stores/tableDataStore";
+import { memo } from "react";
+import { useContextMenuActions } from "../../stores/contextMenuStore";
+import { TableHeaderType } from "./models/BaseTableHeaders";
 
-export interface BaseTableProps {
+export interface TableHeaderProps {
   header: BaseTableHeader;
-  noBorder?: boolean;
-  showFilter?: boolean;
-  tableRef?: React.RefObject<HTMLTableElement>;
-  activeFilter?: ActiveTableFilter;
-  ascendingOrder?: boolean;
-  isSorted?: boolean;
-  filteredItems: TableItem[];
-  onShowFilter?: (show: boolean, filterId: string) => void;
-  onResetSort?: () => void;
-  onSortByColumn?: (header: BaseTableHeader) => void;
-  onSetFilter?: (headerId: string, itemsToHide: string[] | number[]) => void;
+  colSpan: number;
+  rowSpan: number;
+  index: number;
+  showFilter: boolean;
+  tableRef?: React.RefObject<HTMLTableElement | null>;
+  style?: React.CSSProperties;
+  onShowFilter: (show: boolean, filterId: string) => void;
 }
 
-export default function BaseTableHeader({
-  header,
-  noBorder,
-  showFilter,
-  tableRef,
-  activeFilter,
-  ascendingOrder,
-  isSorted,
-  filteredItems,
-  onShowFilter,
-  onResetSort,
-  onSortByColumn,
-  onSetFilter,
-}: Readonly<BaseTableProps>) {
-  const getFilterItemsForHeader = (headerId: string): string[] | number[] => {
-    let items = filteredItems.map((item) => item[headerId]);
+const TableHeader: React.FC<TableHeaderProps> = memo((props) => {
+  const currentSortId = useCurrentSortId();
+  const activeFilters = useActiveFilters();
+  const filterItemsCache = useFilterItemsCache();
+  const advancedSettings = useAdvancedSettings();
+  const ascendingOrder = useAscendingOrder();
+  const { setContextMenu } = useContextMenuActions();
 
-    if (activeFilter) {
-      items = items.concat(activeFilter.itemsToHide);
+  const { setActiveFilter, onResetSort, onSortByColumn } =
+    useTableDataActions();
+
+  const getFilterItemsForHeader = (headerId: string): string[] | number[] => {
+    return (filterItemsCache[headerId] as string[] | number[]) ?? [];
+  };
+
+  const getFilterForHeader = (headerId: string) => {
+    if (!activeFilters) return undefined;
+    return activeFilters.find((filter) => filter.headerId === headerId);
+  };
+
+  const getFilterType = (
+    header: BaseTableHeader,
+    items: (string | number | null | undefined)[]
+  ): FilterTypes => {
+    // First check edit options if available
+    if (header.editOptions?.type) {
+      switch (header.editOptions.type) {
+        case TableHeaderType.NUMBER:
+          return FilterTypes.NUMBER;
+
+        default:
+          return FilterTypes.STRING;
+      }
     }
 
-    return [...new Set(items)] as string[] | number[];
+    // Get first 10 non-null/undefined items
+    const validItems: (string | number)[] = [];
+    let i = 0;
+
+    while (validItems.length < 10 && i < items.length) {
+      const item = items[i];
+      if (item !== null && item !== undefined) {
+        validItems.push(item);
+      }
+      i++;
+    }
+
+    if (validItems.length === 0) {
+      return FilterTypes.STRING; // Default when no valid data
+    }
+
+    // Check if ALL items are numbers (including string numbers)
+    const allNumbers = validItems.every((item) => {
+      if (typeof item === "number") return true;
+      if (typeof item === "string") {
+        return !isNaN(Number(item)) && item.trim() !== "";
+      }
+      return false;
+    });
+
+    return allNumbers ? FilterTypes.NUMBER : FilterTypes.STRING;
   };
 
   return (
     <th
-      className={` ${
-        !noBorder ? "border-solid border border-gray-300! bg-slate-100" : ""
-      } `}
-      key={`header-${header.id}`}
+      key={props.header.id + `-${props.index}`}
+      colSpan={props.colSpan}
+      rowSpan={props.rowSpan}
+      className={`${
+        !advancedSettings?.noBorder
+          ? `border-solid border-b  border-r border-gray-300! bg-gray-50`
+          : ""
+      }`}
+      style={{ ...props.style }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          header: props.header,
+        });
+      }}
     >
-      <div className="flex justify-between">
+      <div
+        style={{
+          width: props.header.width ? `${props.header.width}px` : "auto",
+        }}
+        className="flex justify-between"
+      >
         <div className="flex">
-          {header.customHeader ? (
-            header.customHeader(header)
+          {props.header.customHeader ? (
+            props.header.customHeader(props.header)
           ) : (
             <button
-              onClick={() => onSortByColumn?.(header)}
+              onClick={() => onSortByColumn?.(props.header)}
               className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
-                header.sortable
+                props.header.sortable
                   ? "cursor-pointer hover:underline"
                   : "cursor-default"
               }`}
             >
-              {header.text}
+              {props.header.text}
             </button>
           )}
 
-          {isSorted && (
+          {currentSortId === props.header.id && (
             <>
               <Icon
                 path={ascendingOrder ? mdiArrowUp : mdiArrowDown}
@@ -89,21 +151,28 @@ export default function BaseTableHeader({
           )}
         </div>
 
-        {header.hasFilter ? (
+        {props.header.hasFilter ? (
           <div className="ml-2">
             <TableFilter
-              show={!!showFilter}
-              tableRef={tableRef}
-              currentFilter={activeFilter}
-              filterName={header.text}
-              headerId={header.id}
-              filterType={FilterTypes.STRING}
-              items={getFilterItemsForHeader(header.id)}
-              itemsToHide={activeFilter?.itemsToHide ?? []}
-              onShowOrHide={(show: boolean) => onShowFilter?.(show, header.id)}
-              onSetFilter={(id, itemsToHide: string[] | number[]) => {
-                onSetFilter?.(id, itemsToHide);
-              }}
+              show={props.showFilter}
+              tableRef={props.tableRef}
+              currentFilter={getFilterForHeader(props.header.id)}
+              filterName={props.header.text}
+              headerId={props.header.id}
+              filterType={getFilterType(
+                props.header,
+                getFilterItemsForHeader(props.header.id)
+              )}
+              items={getFilterItemsForHeader(props.header.id)}
+              itemsToHide={
+                activeFilters?.find(
+                  (filter) => filter.headerId === props.header.id
+                )?.itemsToHide ?? []
+              }
+              onShowOrHide={(show: boolean) =>
+                props.onShowFilter(show, props.header.id)
+              }
+              onSetFilter={setActiveFilter}
             />
           </div>
         ) : (
@@ -112,4 +181,7 @@ export default function BaseTableHeader({
       </div>
     </th>
   );
-}
+});
+
+export default TableHeader;
+

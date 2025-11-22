@@ -12,13 +12,15 @@ interface BaseTableGroupRowProps {
   masterGroupName?: string; // Optional prop to indicate if this group is linked
   linkedGroupNames?: string[];
   onCollapseGroup: (group: string) => void;
+  ref: React.Ref<HTMLTableRowElement>;
+  dataIndex: number;
 }
 
 export default function BaseTableGroupRow(
   props: Readonly<BaseTableGroupRowProps>
 ) {
   return (
-    <tr className="bg-[#C294E910]">
+    <tr className="bg-[#C294E910]" ref={props.ref} data-index={props.dataIndex}>
       {props.groupByCustomRender ? (
         props.groupByCustomRender(props.groupBy, props.groupName)
       ) : (
@@ -28,7 +30,7 @@ export default function BaseTableGroupRow(
               key={props.groupName}
               id={props.groupName}
               onClick={() => props.onCollapseGroup(props.groupName)}
-              className="mb-1 h-5 min-h-5 mx-4 bg-[#DADADA] border-none"
+              className=" h-5 min-h-5 mx-4 bg-[#DADADA] border-none"
               iconSize={1}
               small
               circle
@@ -64,3 +66,4 @@ export default function BaseTableGroupRow(
     </tr>
   );
 }
+

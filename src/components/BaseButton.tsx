@@ -16,6 +16,7 @@ interface BaseButtonInterface {
   iconColor?: string;
   iconSize?: number;
   iconColorDisabled?: string;
+  type?: "button" | "submit" | "reset";
 }
 
 export default function BaseButton(props: Readonly<BaseButtonInterface>) {
@@ -28,10 +29,13 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
 
   const button = (
     <button
+      type={props.type ?? "button"}
       id={props.id}
-      className={`btn ${props.className ?? ""} ${props.ghost ? " btn-ghost" : ""} ${
-        props.small ? "btn-xs" : "btn-sm"
-      } content-center ${props.circle ? "btn-circle" : ""}`}
+      className={`btn ${props.className ?? ""} ${
+        props.ghost ? " btn-ghost" : ""
+      } ${props.small ? "btn-xs" : "btn-sm"} content-center ${
+        props.circle ? "btn-circle" : ""
+      }`}
       onClick={props.onClick}
       disabled={props.disabled === true}
     >
@@ -40,7 +44,7 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
           path={props.icon ?? ""}
           color={
             props.disabled
-              ? (props.iconColorDisabled ?? "lightgrey")
+              ? props.iconColorDisabled ?? "lightgrey"
               : props.iconColor
           }
           size={iconSize}

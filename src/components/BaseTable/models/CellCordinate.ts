@@ -1,5 +1,5 @@
 export default interface CellCoordinate {
   rowIndex: number;
   columnIndex: number;
-  fromArrayData?: { index: number };
+  fromArrayData?: { index: number; fromArray: string };
 }

@@ -22,6 +22,10 @@ export default interface BaseTableHeader {
       item: TableItem,
       fromArrayData?: { index: number }
     ) => boolean;
+    notApplicable?: (
+      item: TableItem,
+      fromArrayData?: { index: number }
+    ) => boolean;
     greyedOutIfNotEditable?: boolean;
     required?: boolean;
     type: TableHeaderType;

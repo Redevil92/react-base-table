@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import BaseButton from "../BaseButton";
 import type CommentData from "./models/CommentData";
 import { mdiCheck, mdiClose, mdiPencil, mdiTrashCan } from "@mdi/js";
-import { useCommentPopupContext } from "./contexts/useCommentPopupContext";
+import { useCommentPopupActions } from "../../stores/commentPopupStore";
+import { useAdvancedSettings } from "../../stores/tableDataStore";
 
 interface CommentPopupProps {
   comment: CommentData;
@@ -28,7 +29,9 @@ function CommentPopup(props: CommentPopupProps) {
   } = props;
 
   const [editedComment, setEditedComment] = useState(comment?.text || "");
-  const { setOpenCommentCell, username } = useCommentPopupContext();
+
+  const { setOpenCommentCell } = useCommentPopupActions();
+  const advancedSetting = useAdvancedSettings();
 
   const saveCommentHandler = () => {
     if (props.saveComment) {
@@ -36,7 +39,7 @@ function CommentPopup(props: CommentPopupProps) {
         ...comment,
         text: editedComment,
         columnId: props.columnId,
-        author: username || "Unknown",
+        author: advancedSetting?.currentUsername || "Unknown",
       });
       if (props.isNewComment) {
         setOpenCommentCell(undefined);
@@ -54,7 +57,11 @@ function CommentPopup(props: CommentPopupProps) {
   };
 
   const initials = useMemo(() => {
-    const nameParts = (comment.author || username || "Unknown").split(" ");
+    const nameParts = (
+      comment.author ||
+      advancedSetting?.currentUsername ||
+      "Unknown"
+    ).split(" ");
     return nameParts
       .map((part) => part.charAt(0).toUpperCase())
       .join("")
@@ -72,7 +79,9 @@ function CommentPopup(props: CommentPopupProps) {
           </div>
           <div>
             <span className="text-xs font-bold">
-              {(props.isNewComment ? username : comment.author) || "Unknown"}
+              {(props.isNewComment
+                ? advancedSetting?.currentUsername
+                : comment.author) || "Unknown"}
             </span>
           </div>
         </div>
@@ -105,6 +114,18 @@ function CommentPopup(props: CommentPopupProps) {
         {isEditing ? (
           <div>
             <input
+              onMouseUp={(e) => {
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+              }}
               className="input input-xs"
               type="text"
               value={editedComment}
@@ -151,3 +172,4 @@ function CommentPopup(props: CommentPopupProps) {
 }
 
 export default CommentPopup;
+

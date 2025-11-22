@@ -1,0 +1,17 @@
+/* Add this to your global CSS file or define it in your component with Styled Components/Emotion */
+.cell-selected {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: -2px;
+  /* Use GPU acceleration for smoother rendering */
+  will-change: outline;
+  /* Force hardware acceleration to improve performance */
+  transform: translateZ(0);
+  z-index: 50;
+}
+
+/* .base-table-header {
+  padding-inline: 0px;
+  padding-block: 0px;
+}
+ */
+

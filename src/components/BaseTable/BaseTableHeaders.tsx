@@ -1,17 +1,14 @@
-import { useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type BaseTableHeader from "./models/BaseTableHeaders";
 import type ActiveTableFilter from "./models/ActiveTableFilter";
-import TableFilter from "./TableFilter";
 
-import { mdiArrowDown, mdiArrowUp, mdiCloseCircle } from "@mdi/js";
-import Icon from "@mdi/react";
-import { FilterTypes } from "../../enum/FilterTypes";
+import TableHeader from "./BaseTableHeader";
 
 export interface BaseTableHeadersProps {
   headers: BaseTableHeader[];
   noBorder?: boolean;
   alignCenterInLine?: boolean;
-  currentSortId?: string;
+
   activeFilters?: ActiveTableFilter[];
   filterItemsCache: Record<string, (string | number)[]>;
   ascendingOrder?: boolean;
@@ -22,8 +19,20 @@ export interface BaseTableHeadersProps {
   onSortByColumn?: (header: BaseTableHeader) => void;
 }
 
-export default function BaseTable(props: Readonly<BaseTableHeadersProps>) {
+export default function BaseTableHeaders(
+  props: Readonly<BaseTableHeadersProps>
+) {
   const [filterToShow, setFilterToShow] = useState("");
+
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
+  const [rowHeights, setRowHeights] = useState<number[]>([]);
+
+  useLayoutEffect(() => {
+    const heights = rowRefs.current.map(
+      (row) => row?.getBoundingClientRect().height || 0
+    );
+    setRowHeights(heights);
+  }, [props.headers]);
 
   const showFilterHandler = (show: boolean, filterId: string) => {
     if (!show) {
@@ -33,10 +42,25 @@ export default function BaseTable(props: Readonly<BaseTableHeadersProps>) {
     setFilterToShow(filterId);
   };
 
-  const getFilterForHeader = (headerId: string) => {
-    if (!props.activeFilters) return undefined;
-    return props.activeFilters.find((filter) => filter.headerId === headerId);
-  };
+  const headerDepth = useMemo(() => {
+    function getHeaderDepth(headers: BaseTableHeader[]): number {
+      return headers.reduce((max, h) => {
+        if (h.children && h.children.length > 0) {
+          return Math.max(max, 1 + getHeaderDepth(h.children));
+        }
+        return Math.max(max, 1);
+      }, 0);
+    }
+
+    return getHeaderDepth(props.headers);
+  }, [props.headers]);
+
+  const getColSpan = useCallback((header: BaseTableHeader): number => {
+    if (header.children && header.children.length > 0) {
+      return header.children.reduce((sum, child) => sum + getColSpan(child), 0);
+    }
+    return 1;
+  }, []);
 
   function renderAllHeaderRows(
     headers: BaseTableHeader[],
@@ -54,24 +78,17 @@ export default function BaseTable(props: Readonly<BaseTableHeadersProps>) {
     return [row];
   }
 
-  const getFilterItemsForHeader = (headerId: string): string[] | number[] => {
-    return (props.filterItemsCache[headerId] as string[] | number[]) ?? [];
-  };
-
-  function getHeaderDepth(headers: BaseTableHeader[]): number {
-    return headers.reduce((max, h) => {
-      if (h.children && h.children.length > 0) {
-        return Math.max(max, 1 + getHeaderDepth(h.children));
-      }
-      return Math.max(max, 1);
-    }, 0);
-  }
-  function getColSpan(header: BaseTableHeader): number {
-    if (header.children && header.children.length > 0) {
-      return header.children.reduce((sum, child) => sum + getColSpan(child), 0);
+  const allHeaderRows = useMemo(() => {
+    const row = renderHeaderRows(props.headers, headerDepth, 0);
+    const children = props.headers
+      .filter((h) => h.children && h.children.length > 0)
+      .map((h) => h.children!)
+      .flat();
+    if (children.length > 0) {
+      return [row, ...renderAllHeaderRows(children, headerDepth, 1)];
     }
-    return 1;
-  }
+    return [row];
+  }, [props.headers, filterToShow, rowHeights]);
 
   function renderHeaderRows(
     headers: BaseTableHeader[],
@@ -80,94 +97,41 @@ export default function BaseTable(props: Readonly<BaseTableHeadersProps>) {
   ): React.ReactNode {
     if (headers.length === 0) return null;
     return (
-      <tr key={`header-row-${currentLevel}`} className="z-100">
+      <tr
+        key={`header-row-${currentLevel}`}
+        ref={(el) => {
+          rowRefs.current[currentLevel] = el;
+        }}
+        style={{ zIndex: 100 - currentLevel }}
+      >
         {headers.map((header, index) => {
           const colSpan = getColSpan(header);
           const hasChildren = header.children && header.children.length > 0;
           const rowSpan = hasChildren ? 1 : depth - currentLevel;
 
+          const topOffset = rowHeights
+            .slice(0, currentLevel)
+            .reduce((a, b) => a + b, 0);
+
           return (
-            <th
-              key={header.id + `-${index}`}
+            <TableHeader
+              header={header}
               colSpan={colSpan}
               rowSpan={rowSpan}
-              className={`${
-                !props.noBorder
-                  ? "border-solid border border-gray-300! bg-slate-100"
-                  : ""
-              }`}
-            >
-              <div
-                style={{ width: header.width ? `${header.width}px` : "auto" }}
-                className="flex justify-between"
-              >
-                <div className="flex">
-                  {header.customHeader ? (
-                    header.customHeader(header)
-                  ) : (
-                    <button
-                      onClick={() => props.onSortByColumn?.(header)}
-                      className={`font-semibold bg-transparent text-left text-slate-600 text-xs border-none outline-hidden! whitespace-pre ${
-                        header.sortable
-                          ? "cursor-pointer hover:underline"
-                          : "cursor-default"
-                      }`}
-                    >
-                      {header.text}
-                    </button>
-                  )}
-
-                  {props.currentSortId === header.id && (
-                    <>
-                      <Icon
-                        path={props.ascendingOrder ? mdiArrowUp : mdiArrowDown}
-                        color={"grey"}
-                        size={0.6}
-                      />
-                      <button
-                        onClick={props.onResetSort}
-                        className={`border-solid border bg-slate-300 hover:bg-slate-400! hover:border-transparent cursor-pointer  rounded-lg h-min  focus:outline-hidden!
-                         `}
-                      >
-                        <Icon path={mdiCloseCircle} color={"grey"} size={0.6} />
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {header.hasFilter ? (
-                  <div className="ml-2">
-                    <TableFilter
-                      show={filterToShow === header.id}
-                      tableRef={props.tableRef}
-                      currentFilter={getFilterForHeader(header.id)}
-                      filterName={header.text}
-                      headerId={header.id}
-                      filterType={FilterTypes.STRING}
-                      items={getFilterItemsForHeader(header.id)}
-                      itemsToHide={
-                        props.activeFilters?.find(
-                          (filter) => filter.headerId === header.id
-                        )?.itemsToHide ?? []
-                      }
-                      onShowOrHide={(show: boolean) =>
-                        showFilterHandler(show, header.id)
-                      }
-                      onSetFilter={props.onSetFilter ?? (() => {})}
-                    />
-                  </div>
-                ) : (
-                  <></>
-                )}
-              </div>
-            </th>
+              index={index}
+              showFilter={filterToShow === header.id}
+              onShowFilter={showFilterHandler}
+              style={{
+                position: "sticky",
+                top: `${topOffset}px`,
+              }}
+            />
           );
         })}
       </tr>
     );
   }
 
-  const headerDepth = getHeaderDepth(props.headers);
-
-  return <thead>{renderAllHeaderRows(props.headers, headerDepth)}</thead>;
+  return <thead className="relative">{allHeaderRows}</thead>;
 }
+

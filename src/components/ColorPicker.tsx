@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TwitterPicker, type ColorResult, type RGBColor } from "react-color";
 
 const ColorPicker = ({
@@ -19,6 +19,11 @@ const ColorPicker = ({
     b: 255,
     a: 1,
   });
+
+  const [pickerPosition, setPickerPosition] = useState<"left" | "right">(
+    "left"
+  );
+  const colorBoxRef = useRef<HTMLDivElement>(null);
 
   const RBGAColorToStringStyle = (color: RGBColor): string => {
     return `rgba(${color.r}, ${color.g}, ${color.b}, ${
@@ -72,8 +77,24 @@ const ColorPicker = ({
     }
   }, [initialColor]);
 
+  const checkPosition = () => {
+    if (colorBoxRef.current) {
+      const rect = colorBoxRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const pickerWidth = 276; // TwitterPicker width
+
+      // If there's not enough space to the right (less than picker width + some margin)
+      if (viewportWidth - rect.right < pickerWidth + 20) {
+        setPickerPosition("right");
+      } else {
+        setPickerPosition("left");
+      }
+    }
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    checkPosition();
     setDisplayColorPicker(!displayColorPicker);
   };
   const handleClose = () => {
@@ -98,6 +119,7 @@ const ColorPicker = ({
   return (
     <div className="relative">
       <div
+        ref={colorBoxRef}
         className="inline-block cursor-pointer  bg-slate-50 rounded border border-neutral-100 shadow"
         onClick={handleClick}
       >
@@ -105,7 +127,9 @@ const ColorPicker = ({
       </div>
       {displayColorPicker && (
         <div
-          className="absolute z-20 mt-2"
+          className={`absolute z-20 mt-2 ${
+            pickerPosition === "right" ? "right-0" : "left-0"
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -115,10 +139,10 @@ const ColorPicker = ({
           <div className="fixed inset-0" onClick={handleClose} />
           <TwitterPicker
             color={color}
+            triangle={pickerPosition === "right" ? "top-right" : "top-left"}
             colors={[
               "#ffc094",
               "#fee7a8",
-
               "#b5f1db",
               "#d0ecfe",
               "#9ed5f4",
