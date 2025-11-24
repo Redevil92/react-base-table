@@ -113,12 +113,8 @@ const DialogWrapper: React.FC<DialogWrapperProps> = ({ dialogItem }) => {
         onMouseDown={handleMouseDown}
       >
         <div className="flex items-center">
-          <Icon
-            path={mdiTableLargePlus}
-            color="var(--comment-color)"
-            size={1}
-          ></Icon>
-          <h3 className="text-sm font-semibold ml-2">{dialogItem.title}</h3>
+          <Icon path={mdiTableLargePlus} color="#5588b4" size={1}></Icon>
+          <p className="text-sm font-semibold ml-2 ">{dialogItem.title}</p>
         </div>
 
         {/* <button

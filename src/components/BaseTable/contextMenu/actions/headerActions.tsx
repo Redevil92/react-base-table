@@ -30,7 +30,7 @@ export function useHeaderActions() {
 
     actions.push({
       icon: mdiTableLargePlus,
-      iconColor: "var(--comment-color)",
+      iconColor: "#5588b4",
       text: "Choose columns",
       onClick: (e) => {
         dialogActions.openDialog(
@@ -45,7 +45,7 @@ export function useHeaderActions() {
     });
     actions.push({
       icon: mdiTableLarge,
-      iconColor: "#444",
+      iconColor: "#9d2015",
       text: "Reset columns",
       onClick: () => {
         tableDataActions.setHiddenHeadersId([]);

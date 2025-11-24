@@ -42,7 +42,7 @@ export function useCellActions() {
     return [
       {
         icon: mdiCommentPlus,
-        iconColor: "var(--comment-color)",
+        iconColor: "#5588b4",
         text: `${commentsForCell.length > 0 ? "Edit" : "Add"} a comment`,
         onClick: (
           _event: React.MouseEvent,

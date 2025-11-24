@@ -44,7 +44,7 @@ export default function BaseButton(props: Readonly<BaseButtonInterface>) {
           path={props.icon ?? ""}
           color={
             props.disabled
-              ? props.iconColorDisabled ?? "lightgrey"
+              ? (props.iconColorDisabled ?? "lightgrey")
               : props.iconColor
           }
           size={iconSize}

@@ -189,12 +189,17 @@ const ColumnsDialog: React.FC = () => {
 
   return (
     <div>
-      <BaseButton
-        text="Reset selection"
-        small
-        icon={mdiUndo}
-        onClick={handleReset}
-      ></BaseButton>
+      <div className="flex">
+        <BaseButton
+          text="Reset selection"
+          small
+          icon={mdiUndo}
+          iconColor="grey"
+          onClick={handleReset}
+          ghost
+        ></BaseButton>
+      </div>
+
       <div className=" rounded  mt-4 max-h-[400px] overflow-y-auto">
         <DndContext
           onDragStart={dragStartEvent}

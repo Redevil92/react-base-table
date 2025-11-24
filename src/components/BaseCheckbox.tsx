@@ -13,7 +13,7 @@ export default function BaseCheckbox(props: Readonly<BaseCheckboxInterface>) {
   return (
     <input
       type="checkbox"
-      className={`checkbox checkbox-primary ${
+      className={`checkbox rounded ${
         props.small ? "checkbox-xs" : "checkbox-sm"
       } ${props.className ? props.className : ""}`}
       checked={props.checked}

@@ -361,12 +361,17 @@ export default function BaseTable<T extends TableItem>(
       );
     });
   }, [
-    props.groupBy,
     virtualizer.virtualRows,
-    processedItems,
+    virtualizer.virtualizer.measureElement,
+    props,
     flatGroupedItemsWithoutCollapsed,
+    filteredItemsByGroup,
+    processedLeafHeaders.length,
+    advancedSettings?.showIndex,
     collapsedGroups,
-    virtualizer.virtualizer,
+    collapseGroup,
+    isGroupLinked,
+    processedItems,
   ]);
 
   return (

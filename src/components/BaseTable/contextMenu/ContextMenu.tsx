@@ -109,47 +109,6 @@ export default function ContextMenu(props: ContextMenuProps) {
   return (
     <div ref={menuRef} style={{ ...menuStyle, left: pos.left, top: pos.top }}>
       <ul className="menu menu-sm p-0.5 bg-base-200 rounded-box min-w-55 max-w-xs w-full">
-        {/* {props.item &&
-          getActionsForCell(props.item, props.header.id).map(
-            (action, index) => (
-              <Fragment key={index}>
-                {action.customRender ? (
-                  <>
-                    <li onClick={(e) => handleActionClick(e, action)}>
-                      <a>
-                        {action.icon && (
-                          <Icon
-                            path={action?.icon}
-                            color={action.iconColor}
-                            size={0.8}
-                          />
-                        )}
-
-                        {action.text}
-                        {action.customRender()}
-                      </a>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li onClick={(e) => handleActionClick(e, action)}>
-                      <a>
-                        {action.icon && (
-                          <Icon
-                            path={action?.icon}
-                            color={action.iconColor}
-                            size={0.8}
-                          />
-                        )}
-
-                        {action.text}
-                      </a>
-                    </li>
-                  </>
-                )}
-              </Fragment>
-            )
-          )} */}
         {actions.map((action, index) => (
           <Fragment key={index}>
             <li onClick={(e) => handleActionClick(e, action)}>
@@ -161,6 +120,7 @@ export default function ContextMenu(props: ContextMenuProps) {
                     size={0.7}
                   />
                 )}
+
                 {action.text}
                 {action.customRender && action.customRender()}
               </a>
@@ -171,4 +131,3 @@ export default function ContextMenu(props: ContextMenuProps) {
     </div>
   );
 }
-

@@ -5,6 +5,7 @@ import { mdiChevronDown, mdiChevronUp, mdiDrag } from "@mdi/js";
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import BaseCheckbox from "../../../BaseCheckbox";
+import Icon from "@mdi/react";
 
 const HeaderItem: React.FC<{
   header: BaseTableHeader;
@@ -88,33 +89,40 @@ const HeaderItem: React.FC<{
       {...listeners}
       style={{ marginLeft: `${depth * 20}px`, ...styles }}
     >
-      <div className="flex mb-1 ">
+      <div className="flex mb-1 justify-start items-end">
         <div className="w-7 pr-1">
           {header.children && (
             <div
+              onClick={() => setShowChildren(!showChildren)}
               data-no-dnd="true"
-              className="hover:bg-gray-200 rounded-lg flex justify-center items-center cursor-pointer"
+              className="hover:bg-gray-200 rounded-lg flex justify-end items-center cursor-pointer"
             >
-              <BaseIcon
+              <Icon path={showChildren ? mdiChevronDown : mdiChevronUp} />
+              {/* <BaseIcon
                 onClick={() => setShowChildren(!showChildren)}
                 icon={showChildren ? mdiChevronDown : mdiChevronUp}
-              />
+              /> */}
             </div>
           )}
         </div>
-        <div draggable className="cursor-grab pr-3" onDragStart={() => {}}>
+        <div
+          draggable
+          className="cursor-grab pr-2"
+          onClick={() => setShowChildren(!showChildren)}
+        >
           {/* Drop indicator line */}
-
-          <BaseIcon
+          <Icon path={mdiDrag} color="lightGrey" size={0.8} />
+          {/* <BaseIcon
             small
             onClick={() => setShowChildren(!showChildren)}
             icon={mdiDrag}
             color="var(--disabled-color)"
-          />
+          /> */}
         </div>
         <div data-no-dnd="true">
           <BaseCheckbox
             checked={isSelected}
+            small
             // indeterminate={isIndeterminate}
             onChange={() => handleChange(!isSelected)}
           />
@@ -123,7 +131,7 @@ const HeaderItem: React.FC<{
         {header.text ? (
           <p className="text-sm ml-2">{header.text || header.id}</p>
         ) : (
-          <p className="text-sm ml-2 italic text-gray-400">
+          <p className="text-xs ml-2 italic text-gray-400">
             {header.text || header.id}
           </p>
         )}
